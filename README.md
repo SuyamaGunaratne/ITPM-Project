@@ -73,7 +73,7 @@ ITPM-Project/
 
 1. Navigate to the server directory:
 ```bash
-cd server
+cd backend
 ```
 
 2. Install dependencies:
@@ -107,7 +107,7 @@ The backend server will run on `http://localhost:5000`
 
 1. Navigate to the unihub directory:
 ```bash
-cd unihub
+cd frontend 
 ```
 
 2. Install dependencies using yarn:
