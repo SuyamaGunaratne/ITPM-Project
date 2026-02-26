@@ -62,12 +62,20 @@ const login = async (req, res) => {
       return res.status(403).json({ message: "Your account is pending admin approval" });
     }
 
+    let profileImage = null;
+    if (user.profileImageData && user.profileImageContentType) {
+      profileImage = `data:${user.profileImageContentType};base64,${Buffer.from(
+        user.profileImageData
+      ).toString('base64')}`;
+    }
+
     res.json({
       _id: user._id,
       name: user.fullName,
       email: user.email,
       role: user.role,
       isApproved: user.isApproved,
+      profileImage,
       token: generateToken(user._id)
     });
 
@@ -144,6 +152,6 @@ const login = async (req, res) => {
 module.exports = {
   registerBoardingOwner,
   login,
-  forgotPassword,
-  resetPassword
+  //forgotPassword,
+  //resetPassword
 };

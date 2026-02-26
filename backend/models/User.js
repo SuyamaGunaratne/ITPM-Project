@@ -42,6 +42,10 @@ const userSchema = new mongoose.Schema({
   },
   permissions: { type: [String], default: ['all'] },
 
+  // Profile image fields
+  profileImageData: Buffer,
+  profileImageContentType: String,
+
   // Boarding Owner fields (exactly as you gave)
   businessName: { 
     type: String, 

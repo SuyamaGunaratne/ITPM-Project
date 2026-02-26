@@ -22,14 +22,14 @@ A comprehensive Learning Management System (LMS) for higher education institutes
 
 ```
 ITPM-Project/
-├── unihub/              # React frontend application
+├── frontend/              # React frontend application
 │   ├── src/
 │   │   ├── components/  # React components
 │   │   ├── context/     # React context (AuthContext)
 │   │   ├── utils/       # Utility functions (API)
 │   │   └── App.js       # Main App component
 │   └── package.json
-├── server/              # Node.js/Express backend
+├── backend/              # Node.js/Express backend
 │   ├── config/         # Database configuration
 │   ├── models/         # MongoDB models
 │   ├── routes/         # API routes
@@ -176,6 +176,29 @@ The frontend will run on `http://localhost:3000`
 ## Next Steps
 
 - Add course management functionality
+- Provide a public statistics endpoint (`GET /api/stats`) used by the homepage to display counts of students, teachers, boarding owners and available courses
+
+#### 🔗 MongoDB setup
+
+The backend requires a valid connection string in `.env` under `MONGO_URI`. Examples:
+
+```env
+# Atlas URI – make sure the cluster allows your IP or use 0.0.0.0/0
+MONGO_URI=mongodb+srv://<user>:<password>@cluster0.mongodb.net/UniHub?retryWrites=true&w=majority
+
+# or local MongoDB (run `mongod` first)
+MONGO_URI=mongodb://localhost:27017/UniHub
+```
+
+*Remove any trailing comments in the value*; dotenv does not strip them.
+
+If you see `ECONNREFUSED` or DNS errors, verify:
+1. Your DB host is reachable (whitelist IPs in Atlas).
+2. Credentials are correct.
+3. A local Mongo service is running when using the local URI.
+
+After fixing the string, restart the server (`npm run dev` in `backend`).
+
 - Implement file uploads for boarding images
 - Add notification system
 - Create admin panel for user management
