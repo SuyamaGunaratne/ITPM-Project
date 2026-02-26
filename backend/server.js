@@ -4,16 +4,26 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 
 dotenv.config();
+const dns = require('node:dns/promises');
+dns.setServers(['1.1.1.1', '8.8.8.8']);
 
 const app = express();
 
 // Middleware
-app.use(cors({ origin: 'http://localhost:3000' })); // for your React frontend
+app.use(
+  cors({
+    origin: ['http://localhost:3000', 'http://localhost:5173'],
+  })
+);
 app.use(express.json());
 
 // Routes
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const statsRoutes = require('./routes/statsRoutes');
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/stats', statsRoutes);
 
 const PORT = process.env.PORT || 5000;
 
