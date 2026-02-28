@@ -11,6 +11,10 @@ function AdminDashboard() {
     window.location.href = '/';
   };
 
+  const handleBoardingRequests = () => {
+    window.location.href = '/admin/boarding-registrations';
+  };
+
   return (
     <div className="home-root teacher-root">
       <div className="teacher-layout">
@@ -23,6 +27,10 @@ function AdminDashboard() {
             <button className="sidebar-item sidebar-item-active">
               <span className="sidebar-bullet" />
               Dashboard
+            </button>
+            <button className="sidebar-item" onClick={handleBoardingRequests}>
+              <span className="sidebar-bullet" />
+              Boarding Owner Requests
             </button>
           </nav>
         </aside>
@@ -39,6 +47,15 @@ function AdminDashboard() {
               <img src={avatarSrc} alt="Profile" className="teacher-avatar" />
             </button>
           </header>
+          <div className="dashboard-content">
+            <div className="welcome-card">
+              <h2>Welcome to Admin Panel</h2>
+              <p>Manage registration requests, approve/reject boarding owner applications, and oversee system operations.</p>
+              <button className="btn-primary" onClick={handleBoardingRequests}>
+                View Boarding Owner Requests →
+              </button>
+            </div>
+          </div>
         </main>
       </div>
     </div>

@@ -1,0 +1,11 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Start Backend Server",
+			"type": "shell",
+			"command": "cd d:\\CAMPUS\\Y3S2\\ITPM\\Project\\ITPM-Project\\backend && npm start",
+			"group": "build"
+		}
+	]
+}

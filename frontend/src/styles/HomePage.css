@@ -627,6 +627,52 @@
     border: 2px solid #6366f1;
   }
 
+  .dashboard-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin-top: 1rem;
+  }
+
+  .welcome-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 40px;
+    color: white;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+  }
+
+  .welcome-card h2 {
+    font-size: 28px;
+    margin-bottom: 15px;
+    font-weight: 700;
+  }
+
+  .welcome-card p {
+    font-size: 16px;
+    margin-bottom: 25px;
+    opacity: 0.95;
+    line-height: 1.6;
+  }
+
+  .welcome-card .btn-primary {
+    background-color: white;
+    color: #667eea;
+    font-weight: 600;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 15px;
+  }
+
+  .welcome-card .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  }
+
   .teacher-cards {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
