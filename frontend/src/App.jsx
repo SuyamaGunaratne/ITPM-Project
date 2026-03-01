@@ -13,12 +13,16 @@ import StudentCommunity from './pages/StudentCommunity';
 import StudentBoardings from './pages/StudentBoardings';
 import AdminDashboard from './pages/AdminDashboard';
 import BoardingDashboard from './pages/BoardingDashboard';
+import BoardingOwnerRegistration from './pages/BoardingOwnerRegistration';
+import BoardingRegistrationRequests from './pages/AdminPages/BoardingRegistrationRequests';
 import './App.css';
 
 function App() {
   const path = window.location.pathname;
 
   if (path === '/login') return <LoginPage />;
+  if (path === '/boarding/register') return <BoardingOwnerRegistration />;
+  if (path === '/admin/boarding-registrations') return <BoardingRegistrationRequests />;
 
   if (path === '/teacher/dashboard') return <TeacherDashboard />;
   if (path === '/teacher/students') return <TeacherStudents />;
