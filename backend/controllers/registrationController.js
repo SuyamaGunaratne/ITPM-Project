@@ -80,10 +80,12 @@ const registerBoardingOwner = async (req, res) => {
       status: 'pending'
     });
 
+    console.log('Registration object created, password in memory:', registration.password ? 'EXISTS' : 'MISSING');
     console.log('Registration object created, saving to database...');
     try {
       await registration.save();
       console.log('✓ Registration saved successfully:', registration._id);
+      console.log('Password after save:', registration.password ? 'EXISTS' : 'MISSING');
     } catch (saveError) {
       console.error('❌ Save error occurred:', saveError.message);
       throw saveError; // Re-throw to be caught by outer catch block
@@ -94,6 +96,7 @@ const registerBoardingOwner = async (req, res) => {
       const verifyReg = await BoardingOwnerRegistration.findById(registration._id);
       if (verifyReg) {
         console.log('✓ Verification: Registration found in database');
+        console.log('Password in database:', verifyReg.password ? 'EXISTS' : 'MISSING');
       } else {
         console.error('❌ Verification failed: Registration NOT found in database!');
         throw new Error('Registration was not persisted to database');
@@ -166,7 +169,11 @@ const getRegistrationById = async (req, res) => {
 // Approve registration request
 const approveRegistration = async (req, res) => {
   try {
+    console.log('========== APPROVE REGISTRATION START ==========');
+    console.log('Registration ID:', req.params.id);
+    
     const registration = await BoardingOwnerRegistration.findById(req.params.id);
+    console.log('✓ Found registration:', registration?._id);
 
     if (!registration) {
       return res.status(404).json({ message: 'Registration not found' });
@@ -183,8 +190,15 @@ const approveRegistration = async (req, res) => {
     }
 
     // Create user account for boarding owner
-    // Note: Password is already hashed in registration, so we bypass pre-save hashing
-    const user = new User({
+    console.log('Creating User object with data:');
+    
+    // Verify password exists before proceeding
+    if (!registration.password) {
+      console.error('❌ Password missing from registration!');
+      return res.status(400).json({ message: 'Registration password is missing. Cannot create user account.' });
+    }
+    
+    const userData = {
       fullName: `${registration.firstName} ${registration.lastName}`,
       email: registration.email,
       password: registration.password, // Already hashed from registration
@@ -194,16 +208,27 @@ const approveRegistration = async (req, res) => {
       boardingAddress: registration.address,
       city: registration.city,
       district: registration.district,
-      monthlyRent: registration.monthlyRent,
-      availableRooms: registration.availableRooms,
+      monthlyRent: registration.monthlyRent || 0,
+      availableRooms: registration.availableRooms || 0,
       description: registration.businessName,
       facilities: registration.amenities || [],
       isApproved: true
+    };
+    
+    console.log('User data:', {
+      fullName: userData.fullName,
+      email: userData.email,
+      password: userData.password ? userData.password.substring(0, 10) + '...' : 'NULL',
+      role: userData.role,
+      ownerNIC: userData.ownerNIC,
+      businessName: userData.businessName
     });
 
-    // Save without triggering the password hash middleware again
-    // We need to mark password as not modified to avoid re-hashing
+    const user = new User(userData);
+    console.log('✓ User object created, attempting to save...');
+    
     await user.save();
+    console.log('✓ User saved successfully:', user._id);
 
     // Update registration with approval details
     registration.status = 'approved';
@@ -212,9 +237,12 @@ const approveRegistration = async (req, res) => {
     registration.reviewedAt = new Date();
     registration.adminNotes = req.body.adminNotes || '';
 
+    console.log('Saving registration approval...');
     await registration.save();
+    console.log('✓ Registration updated successfully');
 
     console.log(`✓ Registration approved for: ${registration.email}, User created: ${user._id}`);
+    console.log('========== APPROVE REGISTRATION END ==========');
 
     res.json({
       message: 'Registration approved successfully',
@@ -226,7 +254,14 @@ const approveRegistration = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error approving registration:', error.message);
+    console.error('========== APPROVE REGISTRATION ERROR ==========');
+    console.error('❌ Error approving registration:', error.message);
+    console.error('Error name:', error.name);
+    console.error('Stack:', error.stack);
+    if (error.errors) {
+      console.error('Validation errors:', error.errors);
+    }
+    console.error('========== END ERROR ==========');
     res.status(500).json({ message: 'Failed to approve registration', error: error.message });
   }
 };
