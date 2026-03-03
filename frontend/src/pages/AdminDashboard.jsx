@@ -1,14 +1,30 @@
+import { useEffect } from 'react';
+import useModal from '../hooks/useModal';
+import Modal from '../components/Modal';
+import { secureLogout, setupBackButtonProtection, checkAuthAndPreventCaching } from '../utils/auth';
 import '../styles/HomePage.css';
 
 function AdminDashboard() {
+  const { modal, closeModal, handleConfirm, showConfirm } = useModal();
+
+  useEffect(() => {
+    checkAuthAndPreventCaching();
+    setupBackButtonProtection();
+  }, []);
+
   const stored = window.localStorage.getItem('unihub_user');
   const user = stored ? JSON.parse(stored) : null;
   const adminName = user?.name || 'Admin';
   const avatarSrc = user?.profileImage || '/images/teacher-avatar.jpg';
 
   const handleLogout = () => {
-    window.localStorage.removeItem('unihub_user');
-    window.location.href = '/';
+    showConfirm(
+      'Logout Confirmation',
+      'Are you sure you want to logout? You will be redirected to the login page.',
+      () => {
+        secureLogout();
+      }
+    );
   };
 
   const handleBoardingRequests = () => {
@@ -31,6 +47,10 @@ function AdminDashboard() {
             <button className="sidebar-item" onClick={handleBoardingRequests}>
               <span className="sidebar-bullet" />
               Boarding Owner Requests
+            </button>
+            <button className="sidebar-item" onClick={handleLogout} style={{ color: '#dc3545', marginTop: 'auto' }}>
+              <span className="sidebar-bullet" />
+              Logout
             </button>
           </nav>
         </aside>
@@ -58,6 +78,16 @@ function AdminDashboard() {
           </div>
         </main>
       </div>
+      <Modal
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
+        onCancel={closeModal}
+        onConfirm={() => {
+          handleConfirm();
+          closeModal();
+        }}
+      />
     </div>
   );
 }

@@ -1,5 +1,34 @@
 // Utility functions for auth and security
 
+export const handleLogout = async () => {
+  try {
+    // Get the token from user data
+    const stored = window.localStorage.getItem('unihub_user');
+    const user = stored ? JSON.parse(stored) : null;
+    const token = user?.token;
+
+    // Call backend logout endpoint if token exists
+    if (token) {
+      try {
+        await fetch('http://localhost:5000/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+      } catch (err) {
+        console.log('Logout notification sent to server');
+      }
+    }
+  } catch (err) {
+    console.error('Error during logout:', err);
+  } finally {
+    // Always clear the session on the client side
+    secureLogout();
+  }
+};
+
 export const secureLogout = () => {
   // Clear all auth data
   window.localStorage.removeItem('unihub_user');
@@ -76,6 +105,7 @@ export const isUserLoggedIn = () => {
 };
 
 export default {
+  handleLogout,
   secureLogout,
   setupBackButtonProtection,
   checkAuthAndPreventCaching,

@@ -149,9 +149,38 @@ const login = async (req, res) => {
 //   }
 // };
 
+const logout = async (req, res) => {
+  try {
+    // req.user is set by the protect middleware
+    const userId = req.user._id;
+    const userRole = req.user.role;
+
+    // Verify it's an admin or boarding owner
+    if (userRole !== 'admin' && userRole !== 'boardingOwner') {
+      return res.status(403).json({ message: "Only admins and boarding owners can use this logout endpoint" });
+    }
+
+    // Log the logout action (optional - for audit trail)
+    console.log(`User ${userId} (${userRole}) logged out at ${new Date().toISOString()}`);
+
+    // Send success response
+    // The frontend will handle the actual token removal from localStorage
+    res.json({ 
+      message: "Logged out successfully",
+      userId: userId,
+      role: userRole
+    });
+
+  } catch (err) {
+    console.error("Logout error:", err);
+    res.status(500).json({ message: "Server error during logout", error: err.message });
+  }
+};
+
 module.exports = {
   registerBoardingOwner,
   login,
+  logout,
   //forgotPassword,
   //resetPassword
 };
