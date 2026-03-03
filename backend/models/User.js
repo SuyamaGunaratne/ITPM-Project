@@ -73,9 +73,22 @@ const userSchema = new mongoose.Schema({
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
+  try {
+    if (!this.isModified('password')) return next();
+    
+    // Check if password is already bcrypt hashed (starts with $2a$, $2b$, or $2y$)
+    if (this.password && typeof this.password === 'string' && this.password.match(/^\$2[aby]\$/)) {
+      console.log('[User.pre.save] Password already hashed, skipping hash');
+      return next();
+    }
+    
+    console.log('[User.pre.save] Hashing password');
+    this.password = await bcrypt.hash(this.password, 12);
+    next();
+  } catch (err) {
+    console.error('[User.pre.save] Error:', err.message);
+    next(err);
+  }
 });
 
 userSchema.methods.matchPassword = async function (enteredPassword) {
