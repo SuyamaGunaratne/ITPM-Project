@@ -58,7 +58,34 @@
     display: flex;
     gap: 1.1rem;
   }
-  
+
+  .navbar-link {
+    font-weight: 600;
+    color: #1f2937;
+    text-decoration: none;
+    padding: 0.65rem 1rem;
+    border-radius: 9999px;
+    transition: background 0.2s ease, color 0.2s ease;
+    border: 1px solid transparent;
+  }
+
+  .navbar-link:hover {
+    background: rgba(99, 102, 241, 0.14);
+    color: #4f46e5;
+    border-color: rgba(99, 102, 241, 0.3);
+  }
+
+  .navbar-title-group {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+  }
+
+  .navbar-tagline {
+    font-size: 0.9rem;
+    color: rgba(31, 41, 55, 0.75);
+  }
+
   .btn-primary,
   .btn-outline {
     font-weight: 600;

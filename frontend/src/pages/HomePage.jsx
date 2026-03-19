@@ -44,28 +44,6 @@ function HomePage() {
 
   return (
     <div className="home-root">
-      {/* NAVBAR */}
-      <header className="navbar">
-        <div className="navbar-left">
-          <img src="/logo.png" alt="UniHub Logo" className="navbar-logo" />
-          <span className="navbar-title">UniHub LMS</span>
-        </div>
-        <nav className="navbar-links">
-          <button
-            className="btn-outline"
-            onClick={() => (window.location.href = '/login')}
-          >
-            Login
-          </button>
-          <button
-            className="btn-primary"
-            onClick={() => (window.location.href = '/boarding/register')}
-          >
-            Register Boarding Owner
-          </button>
-        </nav>
-      </header>
-
       {/* HERO + SLIDER */}
       <main className="hero">
         <div className="hero-text">
