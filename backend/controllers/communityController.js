@@ -1,0 +1,307 @@
+const StudentPost = require('../models/StudentPost');
+const User = require('../models/User');
+
+// Create a new student post (pending approval)
+const createPost = async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: 'Authentication required' });
+
+    // Only students are allowed to create community posts
+    if (req.user.role !== 'student') {
+      console.warn(`Community post creation blocked for role=\"${req.user.role}\" (user=${req.user._id})`);
+      return res.status(403).json({ message: `Only students can create community posts (your role: ${req.user.role})` });
+    }
+
+    const { title, content, imageData, imageContentType } = req.body;
+    if (!title || !content) {
+      return res.status(400).json({ message: 'Title and content are required' });
+    }
+
+    const post = new StudentPost({
+      title: title.trim(),
+      content: content.trim(),
+      author: req.user._id,
+      status: 'pending',
+    });
+
+    if (imageData && imageContentType) {
+      post.image = {
+        data: Buffer.from(imageData, 'base64'),
+        contentType: imageContentType,
+      };
+    }
+
+    await post.save();
+    res.status(201).json({ message: 'Post submitted and pending admin approval', post });
+  } catch (error) {
+    console.error('Error creating community post:', error);
+    res.status(500).json({ message: 'Failed to create post', error: error.message });
+  }
+};
+
+// Get list of approved community posts (for students to view)
+const getApprovedPosts = async (req, res) => {
+  try {
+    const posts = await StudentPost.find({ status: 'approved' })
+      .sort({ createdAt: -1 })
+      .populate('author', 'fullName profileImageData profileImageContentType')
+      .populate('comments.user', 'fullName profileImageData profileImageContentType');
+
+    const transformed = posts.map((p) => {
+      const imageUrl = p.image?.data && p.image?.contentType
+        ? `data:${p.image.contentType};base64,${p.image.data.toString('base64')}`
+        : null;
+
+      const likes = Array.isArray(p.likes) ? p.likes : [];
+      const likedByCurrentUser = req.user
+        ? likes.some((u) => u.toString() === req.user._id.toString())
+        : false;
+
+      return {
+        _id: p._id,
+        title: p.title,
+        content: p.content,
+        image: imageUrl,
+        author: {
+          _id: p.author?._id,
+          fullName: p.author?.fullName,
+          profileImage: p.author?.profileImageData && p.author?.profileImageContentType
+            ? `data:${p.author.profileImageContentType};base64,${Buffer.from(p.author.profileImageData).toString('base64')}`
+            : null,
+        },
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        likesCount: likes.length,
+        likedByCurrentUser,
+        comments: p.comments.map((c) => ({
+          _id: c._id,
+          text: c.text,
+          user: c.user,
+          createdAt: c.createdAt,
+        })),
+      };
+    });
+
+    res.json(transformed);
+  } catch (error) {
+    console.error('Error getting approved posts:', error);
+    res.status(500).json({ message: 'Failed to fetch posts', error: error.message });
+  }
+};
+
+// Get the current user's posts (pending/approved/rejected)
+const getMyPosts = async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: 'Authentication required' });
+
+    const posts = await StudentPost.find({ author: req.user._id })
+      .sort({ createdAt: -1 });
+
+    const transformed = posts.map((p) => {
+      const imageUrl = p.image?.data && p.image?.contentType
+        ? `data:${p.image.contentType};base64,${p.image.data.toString('base64')}`
+        : null;
+
+      const likes = Array.isArray(p.likes) ? p.likes : [];
+
+      return {
+        _id: p._id,
+        title: p.title,
+        content: p.content,
+        image: imageUrl,
+        status: p.status,
+        reviewReason: p.reviewReason,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        likesCount: likes.length,
+      };
+    });
+
+    res.json(transformed);
+  } catch (error) {
+    console.error('Error getting user posts:', error);
+    res.status(500).json({ message: 'Failed to fetch your posts', error: error.message });
+  }
+};
+
+// Add a comment to a post
+const addComment = async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: 'Authentication required' });
+
+    const { postId } = req.params;
+    const { text } = req.body;
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ message: 'Comment text is required' });
+    }
+
+    const post = await StudentPost.findById(postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    if (post.status !== 'approved') {
+      return res.status(400).json({ message: 'Can only comment on approved posts' });
+    }
+
+    post.comments.push({ user: req.user._id, text: text.trim() });
+    await post.save();
+
+    // respond with newly created comment (last in array)
+    const added = post.comments[post.comments.length - 1];
+
+    res.status(201).json({ message: 'Comment added', comment: added });
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    res.status(500).json({ message: 'Failed to add comment', error: error.message });
+  }
+};
+
+// Toggle like/unlike a post
+const toggleLike = async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: 'Authentication required' });
+
+    const { postId } = req.params;
+    const post = await StudentPost.findById(postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    if (post.status !== 'approved') {
+      return res.status(400).json({ message: 'Can only like approved posts' });
+    }
+
+    const userId = req.user._id.toString();
+    const likedIndex = (post.likes || []).findIndex((u) => u.toString() === userId);
+    let liked = false;
+
+    if (likedIndex > -1) {
+      post.likes.splice(likedIndex, 1);
+    } else {
+      post.likes = post.likes || [];
+      post.likes.push(req.user._id);
+      liked = true;
+    }
+
+    await post.save();
+
+    res.json({
+      message: liked ? 'Post liked' : 'Like removed',
+      likesCount: (post.likes || []).length,
+      likedByCurrentUser: liked,
+    });
+  } catch (error) {
+    console.error('Error toggling like:', error);
+    res.status(500).json({ message: 'Failed to toggle like', error: error.message });
+  }
+};
+
+// Get comments of a post
+const getComments = async (req, res) => {
+  try {
+    const { postId } = req.params;
+
+    const post = await StudentPost.findById(postId).populate('comments.user', 'fullName profileImageData profileImageContentType');
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    if (post.status !== 'approved') {
+      return res.status(403).json({ message: 'Comments are available only for approved posts' });
+    }
+
+    const formatted = post.comments.map((c) => ({
+      _id: c._id,
+      text: c.text,
+      createdAt: c.createdAt,
+      user: {
+        _id: c.user?._id,
+        fullName: c.user?.fullName,
+        profileImage: c.user?.profileImageData && c.user?.profileImageContentType
+          ? `data:${c.user.profileImageContentType};base64,${Buffer.from(c.user.profileImageData).toString('base64')}`
+          : null,
+      },
+    }));
+
+    res.json(formatted);
+  } catch (error) {
+    console.error('Error getting comments:', error);
+    res.status(500).json({ message: 'Failed to fetch comments', error: error.message });
+  }
+};
+
+// Admin: list pending posts
+const getPendingPosts = async (req, res) => {
+  try {
+    const posts = await StudentPost.find({ status: 'pending' })
+      .sort({ createdAt: -1 })
+      .populate('author', 'fullName email');
+
+    res.json(posts);
+  } catch (error) {
+    console.error('Error fetching pending posts:', error);
+    res.status(500).json({ message: 'Failed to fetch pending posts', error: error.message });
+  }
+};
+
+// Admin: approve a post
+const approvePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+
+    const post = await StudentPost.findById(postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    if (post.status !== 'pending') {
+      return res.status(400).json({ message: 'Post has already been reviewed' });
+    }
+
+    post.status = 'approved';
+    post.reviewedBy = req.user._id;
+    post.reviewReason = req.body.reviewReason || '';
+    post.reviewedAt = new Date();
+
+    await post.save();
+
+    res.json({ message: 'Post approved successfully' });
+  } catch (error) {
+    console.error('Error approving post:', error);
+    res.status(500).json({ message: 'Failed to approve post', error: error.message });
+  }
+};
+
+// Admin: reject a post
+const rejectPost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { reviewReason } = req.body;
+
+    if (!reviewReason || !reviewReason.trim()) {
+      return res.status(400).json({ message: 'Review reason is required when rejecting' });
+    }
+
+    const post = await StudentPost.findById(postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    if (post.status !== 'pending') {
+      return res.status(400).json({ message: 'Post has already been reviewed' });
+    }
+
+    post.status = 'rejected';
+    post.reviewReason = reviewReason.trim();
+    post.reviewedBy = req.user._id;
+    post.reviewedAt = new Date();
+
+    await post.save();
+
+    res.json({ message: 'Post rejected successfully' });
+  } catch (error) {
+    console.error('Error rejecting post:', error);
+    res.status(500).json({ message: 'Failed to reject post', error: error.message });
+  }
+};
+
+module.exports = {
+  createPost,
+  getApprovedPosts,
+  getMyPosts,
+  addComment,
+  toggleLike,
+  getComments,
+  getPendingPosts,
+  approvePost,
+  rejectPost,
+};

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import AdminLayout from '../../components/AdminLayout';
 import '../../styles/Management.css';
 
 function BoardingRegistrationRequests() {
@@ -175,12 +176,27 @@ function BoardingRegistrationRequests() {
   };
 
   if (loading) {
-    return <div className="management-container"><p>Loading registration requests...</p></div>;
+    return (
+      <AdminLayout
+        title="Boarding Owner Registrations"
+        subtitle="Review and manage boarding owner applications"
+        activePath="/admin/boarding-registrations"
+      >
+        <div className="management-container">
+          <p>Loading registration requests...</p>
+        </div>
+      </AdminLayout>
+    );
   }
 
   return (
-    <div className="management-container">
-      <h1>Boarding Owner Registration Requests</h1>
+    <AdminLayout
+      title="Boarding Owner Registrations"
+      subtitle="Review and manage boarding owner applications"
+      activePath="/admin/boarding-registrations"
+    >
+      <div className="management-container">
+        <h1>Boarding Owner Registration Requests</h1>
 
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
@@ -402,6 +418,7 @@ function BoardingRegistrationRequests() {
         </div>
       )}
     </div>
+  </AdminLayout>
   );
 }
 

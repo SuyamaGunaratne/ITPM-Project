@@ -75,21 +75,6 @@ function LoginPage() {
 
   return (
     <div className="home-root login-root">
-      <header className="navbar">
-        <div className="navbar-left">
-          <img src="/logo.png" alt="UniHub Logo" className="navbar-logo" />
-          <span className="navbar-title">UniHub LMS</span>
-        </div>
-        <nav className="navbar-links">
-          <button
-            className="btn-outline"
-            onClick={() => (window.location.href = '/')}
-          >
-            Back to Home
-          </button>
-        </nav>
-      </header>
-
       <main className="login-main">
         <section className="login-card">
           <div className="login-header">

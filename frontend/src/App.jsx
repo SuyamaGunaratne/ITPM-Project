@@ -15,32 +15,53 @@ import AdminDashboard from './pages/AdminDashboard';
 import BoardingDashboard from './pages/BoardingDashboard';
 import BoardingOwnerRegistration from './pages/BoardingOwnerRegistration';
 import BoardingRegistrationRequests from './pages/AdminPages/BoardingRegistrationRequests';
+import PostRequests from './pages/AdminPages/PostRequests';
+import StudentManagement from './pages/AdminPages/StudentManagement';
+import TeacherManagement from './pages/AdminPages/TeacherManagement';
+import BoardingOwnerManagement from './pages/AdminPages/BoardingOwnerManagement';
+import GlobalHeader from './components/GlobalHeader';
 import './App.css';
 
 function App() {
   const path = window.location.pathname;
 
-  if (path === '/login') return <LoginPage />;
-  if (path === '/boarding/register') return <BoardingOwnerRegistration />;
-  if (path === '/admin/boarding-registrations') return <BoardingRegistrationRequests />;
+  const renderPage = () => {
+    if (path === '/login') return <LoginPage />;
+    if (path === '/boarding/register') return <BoardingOwnerRegistration />;
+    if (path === '/admin/boarding-registrations') return <BoardingRegistrationRequests />;
 
-  if (path === '/teacher/dashboard') return <TeacherDashboard />;
-  if (path === '/teacher/students') return <TeacherStudents />;
-  if (path === '/teacher/materials') return <TeacherMaterials />;
-  if (path === '/teacher/quizzes/publish') return <TeacherPublishQuiz />;
-  if (path === '/teacher/profile/edit') return <TeacherProfileEdit />;
+    if (path === '/teacher/dashboard') return <TeacherDashboard />;
+    if (path === '/teacher/students') return <TeacherStudents />;
+    if (path === '/teacher/materials') return <TeacherMaterials />;
+    if (path === '/teacher/quizzes/publish') return <TeacherPublishQuiz />;
+    if (path === '/teacher/profile/edit') return <TeacherProfileEdit />;
 
-  if (path === '/student/dashboard') return <StudentDashboard />;
-  if (path === '/student/profile/edit') return <StudentProfileEdit />;
-  if (path === '/student/quizzes') return <StudentQuizzes />;
-  if (path === '/student/materials') return <StudentMaterials />;
-  if (path === '/student/community') return <StudentCommunity />;
-  if (path === '/student/boardings') return <StudentBoardings />;
+    if (path === '/student/dashboard') return <StudentDashboard />;
+    if (path === '/student/profile/edit') return <StudentProfileEdit />;
+    if (path === '/student/quizzes') return <StudentQuizzes />;
+    if (path === '/student/materials') return <StudentMaterials />;
+    if (path === '/student/community') return <StudentCommunity />;
+    if (path === '/student/boardings') return <StudentBoardings />;
 
-  if (path === '/admin/dashboard') return <AdminDashboard />;
-  if (path === '/boarding/dashboard') return <BoardingDashboard />;
+    if (path === '/admin/dashboard') return <AdminDashboard />;
+    if (path === '/admin/post-requests') return <PostRequests />;
+    if (path === '/admin/students') return <StudentManagement />;
+    if (path === '/admin/teachers') return <TeacherManagement />;
+    if (path === '/admin/boarding-owners') return <BoardingOwnerManagement />;
+    if (path === '/boarding/dashboard') return <BoardingDashboard />;
 
-  return <HomePage />;
+    return <HomePage />;
+  };
+
+  const showNavFor = ['/', '/login', '/boarding/register'];
+  const showNav = showNavFor.includes(path);
+
+  return (
+    <>
+      <GlobalHeader showNav={showNav} />
+      {renderPage()}
+    </>
+  );
 }
 
 export default App;
