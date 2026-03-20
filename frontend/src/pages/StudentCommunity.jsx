@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import useModal from '../hooks/useModal';
 import Modal from '../components/Modal';
+import Toast from '../components/Toast';
 import { secureLogout, setupBackButtonProtection, checkAuthAndPreventCaching } from '../utils/auth';
 import '../styles/HomePage.css';
 import '../styles/Management.css';
@@ -20,6 +21,9 @@ function StudentCommunity() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  const [toast, setToast] = useState({ isVisible: false, message: '', type: 'success' });
+  const [deletePostId, setDeletePostId] = useState(null);
+
   const [newPost, setNewPost] = useState({
     title: '',
     content: '',
@@ -29,8 +33,9 @@ function StudentCommunity() {
   });
 
   const [commentInputs, setCommentInputs] = useState({});
+  const [activeCommentPostId, setActiveCommentPostId] = useState(null);
 
-  const [user, setUser] = useState(() => {
+  const [user] = useState(() => {
     const stored = window.localStorage.getItem('unihub_user');
     if (!stored) return null;
     try {
@@ -44,19 +49,10 @@ function StudentCommunity() {
   const studentName = user?.fullName || user?.name || 'Student';
   const avatarSrc = user?.profileImage || '/images/teacher-avatar.jpg';
 
-  const apiHeaders = {
+  const apiHeaders = useMemo(() => ({
     'Content-Type': 'application/json',
     Authorization: token ? `Bearer ${token}` : '',
-  };
-
-  useEffect(() => {
-    if (!checkAuthAndPreventCaching()) return;
-    setupBackButtonProtection();
-    if (token) {
-      fetchFeedPosts();
-      fetchMyPosts();
-    }
-  }, [token]);
+  }), [token]);
 
   const parseJsonOrText = async (res) => {
     const text = await res.text();
@@ -67,7 +63,7 @@ function StudentCommunity() {
     }
   };
 
-  const fetchFeedPosts = async () => {
+  const fetchFeedPosts = useCallback(async () => {
     setLoadingFeed(true);
     setError('');
 
@@ -85,9 +81,9 @@ function StudentCommunity() {
     } finally {
       setLoadingFeed(false);
     }
-  };
+  }, [apiHeaders]);
 
-  const fetchMyPosts = async () => {
+  const fetchMyPosts = useCallback(async () => {
     setLoadingMine(true);
     setError('');
 
@@ -105,7 +101,16 @@ function StudentCommunity() {
     } finally {
       setLoadingMine(false);
     }
-  };
+  }, [apiHeaders]);
+
+  useEffect(() => {
+    if (!checkAuthAndPreventCaching()) return;
+    setupBackButtonProtection();
+    if (token) {
+      fetchFeedPosts();
+      fetchMyPosts();
+    }
+  }, [token, fetchFeedPosts, fetchMyPosts]);
 
   const setTab = (tab) => {
     setError('');
@@ -268,6 +273,83 @@ function StudentCommunity() {
     }
   };
 
+  const isOwner = (post) => post?.author?._id === user?._id;
+
+  const handleEditPost = async (post) => {
+    const newTitle = window.prompt('Edit post title:', post.title);
+    if (newTitle === null) return;
+
+    const newContent = window.prompt('Edit post content:', post.content);
+    if (newContent === null) return;
+
+    if (!newTitle.trim() || !newContent.trim()) {
+      setError('Title and content cannot be empty.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/community/posts/${post._id}`, {
+        method: 'PUT',
+        headers: apiHeaders,
+        body: JSON.stringify({ title: newTitle.trim(), content: newContent.trim() }),
+      });
+
+      const data = await (response.ok ? response.json() : response.json());
+      if (!response.ok) throw new Error(data.message || 'Failed to update post');
+
+      setSuccess('Post updated successfully. It may require re-approval.');
+      setError('');
+      fetchFeedPosts();
+      fetchMyPosts();
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'Unable to update post');
+    }
+  };
+
+  const handleDeletePost = (postId) => {
+    setDeletePostId(postId);
+    showConfirm(
+      'Delete Post',
+      'Are you sure you want to delete this post? This action cannot be undone.',
+      async () => {
+        try {
+          setActionLoading(true);
+          const response = await fetch(`http://localhost:5000/api/community/posts/${postId}`, {
+            method: 'DELETE',
+            headers: apiHeaders,
+          });
+
+          const data = await (response.ok ? response.json() : response.json());
+          if (!response.ok) throw new Error(data.message || 'Failed to delete post');
+
+          setToast({
+            isVisible: true,
+            message: '✓ Post deleted successfully!',
+            type: 'success',
+          });
+          setError('');
+          setDeletePostId(null);
+          
+          // Refresh posts after a short delay
+          setTimeout(() => {
+            fetchFeedPosts();
+            fetchMyPosts();
+          }, 500);
+        } catch (err) {
+          console.error(err);
+          setToast({
+            isVisible: true,
+            message: '✕ ' + (err.message || 'Unable to delete post'),
+            type: 'error',
+          });
+        } finally {
+          setActionLoading(false);
+        }
+      }
+    );
+  };
+
   const formatDate = (iso) => {
     try {
       return new Date(iso).toLocaleString();
@@ -277,7 +359,7 @@ function StudentCommunity() {
   };
 
   return (
-    <div className="home-root teacher-root">
+    <div className="home-root teacher-root student-community-root">
       <div className="teacher-layout">
         <aside className="teacher-sidebar">
           <div className="sidebar-header">
@@ -442,12 +524,24 @@ function StudentCommunity() {
                 ) : (
                   feedPosts.map((post) => (
                     <div key={post._id} className="registration-card" style={{ marginBottom: 18 }}>
-                      <div className="card-header" style={{ alignItems: 'flex-start' }}>
-                        <div>
+                      <div className="card-header">
+                        <div className="card-header-left">
                           <h3>{post.title}</h3>
                           <p className="email">
                             Posted by {post.author?.fullName || 'Unknown'} • {formatDate(post.createdAt)}
                           </p>
+                        </div>
+                        <div className="card-header-right">
+                          {isOwner(post) && (
+                            <div className="post-actions">
+                              <button type="button" className="btn-outline btn-sm" onClick={() => handleEditPost(post)}>
+                                Edit
+                              </button>
+                              <button type="button" className="btn-danger btn-sm" onClick={() => handleDeletePost(post._id)}>
+                                Delete
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="card-body" style={{ maxHeight: 'unset' }}>
@@ -479,65 +573,75 @@ function StudentCommunity() {
                           >
                             {post.likedByCurrentUser ? '♥ Liked' : '♡ Like'} ({post.likesCount || 0})
                           </button>
+                          <button
+                            type="button"
+                            className="btn-like"
+                            onClick={() =>
+                              setActiveCommentPostId(activeCommentPostId === post._id ? null : post._id)
+                            }
+                          >
+                            💬 {post.comments?.length || 0}
+                          </button>
                         </div>
 
-                        <div style={{ marginTop: 16 }}>
-                          <h4 style={{ margin: '0 0 10px 0' }}>Comments</h4>
-                          {post.comments?.length === 0 ? (
-                            <p style={{ color: '#555' }}>No comments yet. Be the first to reply.</p>
-                          ) : (
-                            post.comments.map((comment) => (
-                              <div
-                                key={comment._id}
-                                style={{
-                                  marginBottom: 12,
-                                  padding: 10,
-                                  background: '#f7f8ff',
-                                  borderRadius: 8,
-                                }}
-                              >
-                                <p style={{ margin: 0, fontSize: 13, color: '#333' }}>
-                                  <strong>{comment.user?.fullName || 'Anonymous'}</strong> •{' '}
-                                  {formatDate(comment.createdAt)}
-                                </p>
-                                <p
+                        {activeCommentPostId === post._id && (
+                          <div style={{ marginTop: 16 }}>
+                            {post.comments?.length === 0 ? (
+                              <p style={{ color: '#555' }}>No comments yet.</p>
+                            ) : (
+                              post.comments.map((comment) => (
+                                <div
+                                  key={comment._id}
                                   style={{
-                                    margin: '6px 0 0 0',
-                                    whiteSpace: 'pre-wrap',
-                                    color: '#444',
+                                    marginBottom: 12,
+                                    padding: 10,
+                                    background: '#f7f8ff',
+                                    borderRadius: 8,
                                   }}
                                 >
-                                  {comment.text}
-                                </p>
-                              </div>
-                            ))
-                          )}
+                                  <p style={{ margin: 0, fontSize: 13, color: '#333' }}>
+                                    <strong>{comment.user?.fullName || 'Anonymous'}</strong> •{' '}
+                                    {formatDate(comment.createdAt)}
+                                  </p>
+                                  <p
+                                    style={{
+                                      margin: '6px 0 0 0',
+                                      whiteSpace: 'pre-wrap',
+                                      color: '#444',
+                                    }}
+                                  >
+                                    {comment.text}
+                                  </p>
+                                </div>
+                              ))
+                            )}
 
-                          <div style={{ marginTop: 12 }}>
-                            <textarea
-                              value={commentInputs[post._id] || ''}
-                              onChange={(e) => handleCommentChange(post._id, e.target.value)}
-                              placeholder="Write a reply..."
-                              rows={2}
-                              style={{
-                                width: '100%',
-                                borderRadius: 8,
-                                border: '1px solid #ccc',
-                                padding: 10,
-                                resize: 'vertical',
-                              }}
-                            />
-                            <button
-                              type="button"
-                              className="btn-primary"
-                              style={{ marginTop: 10 }}
-                              disabled={actionLoading}
-                              onClick={() => handleAddComment(post._id)}
-                            >
-                              {actionLoading ? 'Posting…' : 'Post Comment'}
-                            </button>
+                            <div style={{ marginTop: 12 }}>
+                              <textarea
+                                value={commentInputs[post._id] || ''}
+                                onChange={(e) => handleCommentChange(post._id, e.target.value)}
+                                placeholder="Write a reply..."
+                                rows={2}
+                                style={{
+                                  width: '100%',
+                                  borderRadius: 8,
+                                  border: '1px solid #ccc',
+                                  padding: 10,
+                                  resize: 'vertical',
+                                }}
+                              />
+                              <button
+                                type="button"
+                                className="btn-primary"
+                                style={{ marginTop: 10 }}
+                                disabled={actionLoading}
+                                onClick={() => handleAddComment(post._id)}
+                              >
+                                {actionLoading ? 'Posting…' : 'Post Comment'}
+                              </button>
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   ))
@@ -555,14 +659,24 @@ function StudentCommunity() {
                 ) : (
                   myPosts.map((post) => (
                     <div key={post._id} className="registration-card" style={{ marginBottom: 12 }}>
-                      <div className="card-header" style={{ alignItems: 'flex-start' }}>
-                        <div>
+                      <div className="card-header">
+                        <div className="card-header-left">
                           <h3>{post.title}</h3>
                           <p className="email">
                             Submitted on {formatDate(post.createdAt)}
                           </p>
                         </div>
-                        <span className={`status-badge status-${post.status}`}>{post.status}</span>
+                        <div className="card-header-right">
+                          <span className={`status-badge status-${post.status}`}>{post.status}</span>
+                          <div className="post-actions">
+                            <button type="button" className="btn-outline btn-sm" onClick={() => handleEditPost(post)}>
+                              Edit
+                            </button>
+                            <button type="button" className="btn-danger btn-sm" onClick={() => handleDeletePost(post._id)}>
+                              Delete
+                            </button>
+                          </div>
+                        </div>
                       </div>
                       <div className="card-body" style={{ maxHeight: 'unset' }}>
                         <p style={{ whiteSpace: 'pre-wrap' }}>{post.content}</p>
@@ -601,6 +715,14 @@ function StudentCommunity() {
         confirmText={modal.confirmText}
         cancelText={modal.cancelText}
         singleButton={modal.singleButton}
+      />
+
+      <Toast
+        isVisible={toast.isVisible}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, isVisible: false })}
+        duration={4000}
       />
     </div>
   );
