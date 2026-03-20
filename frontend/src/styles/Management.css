@@ -168,9 +168,33 @@
   align-items: flex-start;
 }
 
-.card-header h3 {
-  margin: 0 0 5px 0;
-  font-size: 18px;
+.student-community-root .registration-card {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto 20px;
+}
+
+.student-community-root .registration-card .card-header {
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-direction: row;
+  text-align: left;
+}
+
+.student-community-root .card-header-left {
+  text-align: left;
+  flex: 1;
+}
+
+.student-community-root .card-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.student-community-root .registration-card .card-body {
+  text-align: center;
 }
 
 .card-header .email {

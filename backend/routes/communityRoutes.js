@@ -7,6 +7,8 @@ const communityController = require('../controllers/communityController');
 router.post('/posts', protect, communityController.createPost);
 router.get('/posts', protect, communityController.getApprovedPosts);
 router.get('/posts/mine', protect, communityController.getMyPosts);
+router.put('/posts/:postId', protect, communityController.updatePost);
+router.delete('/posts/:postId', protect, communityController.deletePost);
 router.post('/posts/:postId/comments', protect, communityController.addComment);
 router.put('/posts/:postId/like', protect, communityController.toggleLike);
 router.get('/posts/:postId/comments', protect, communityController.getComments);

@@ -1,5 +1,6 @@
 const StudentPost = require('../models/StudentPost');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 // Create a new student post (pending approval)
 const createPost = async (req, res) => {
@@ -32,6 +33,22 @@ const createPost = async (req, res) => {
     }
 
     await post.save();
+
+    // notify admins for approval
+    try {
+      const admins = await User.find({ role: 'admin' });
+      await Promise.all(admins.map((admin) =>
+        Notification.create({
+          user: admin._id,
+          type: 'admin_request',
+          post: post._id,
+          message: `New student concern pending approval: "${post.title}"`,
+        })
+      ));
+    } catch (notifyErr) {
+      console.error('Failed to create admin notifications:', notifyErr);
+    }
+
     res.status(201).json({ message: 'Post submitted and pending admin approval', post });
   } catch (error) {
     console.error('Error creating community post:', error);
@@ -257,6 +274,19 @@ const approvePost = async (req, res) => {
 
     await post.save();
 
+    try {
+      if (post.author) {
+        await Notification.create({
+          user: post.author,
+          type: 'post_approved',
+          post: post._id,
+          message: `Your concern "${post.title}" was approved by admin.`,
+        });
+      }
+    } catch (notifyErr) {
+      console.error('Failed to create user notification:', notifyErr);
+    }
+
     res.json({ message: 'Post approved successfully' });
   } catch (error) {
     console.error('Error approving post:', error);
@@ -294,10 +324,74 @@ const rejectPost = async (req, res) => {
   }
 };
 
+const updatePost = async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: 'Authentication required' });
+
+    const { postId } = req.params;
+    const { title, content } = req.body;
+
+    if (!title?.trim() || !content?.trim()) {
+      return res.status(400).json({ message: 'Title and content are required' });
+    }
+
+    const post = await StudentPost.findById(postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    if (post.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to edit this post' });
+    }
+
+    post.title = title.trim();
+    post.content = content.trim();
+
+    // Edited topics are resubmitted for moderation, if not admin.
+    if (post.status === 'approved') {
+      post.status = 'pending';
+      post.reviewReason = '';
+      post.reviewedBy = null;
+    }
+
+    post.updatedAt = new Date();
+    await post.save();
+
+    res.json({ message: 'Post updated successfully', post });
+  } catch (error) {
+    console.error('Error updating post:', error);
+    res.status(500).json({ message: 'Failed to update post', error: error.message });
+  }
+};
+
+const deletePost = async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: 'Authentication required' });
+
+    const { postId } = req.params;
+    const post = await StudentPost.findById(postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    if (post.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to delete this post' });
+    }
+
+    const deleteResult = await StudentPost.deleteOne({ _id: postId });
+    if (deleteResult.deletedCount === 0) {
+      return res.status(404).json({ message: 'Post not found during deletion' });
+    }
+
+    res.json({ message: 'Post deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting post:', error);
+    res.status(500).json({ message: 'Failed to delete post', error: error.message });
+  }
+};
+
 module.exports = {
   createPost,
   getApprovedPosts,
   getMyPosts,
+  updatePost,
+  deletePost,
   addComment,
   toggleLike,
   getComments,
