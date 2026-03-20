@@ -1,21 +1,40 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import useModal from '../hooks/useModal';
 import Modal from '../components/Modal';
 import { secureLogout, setupBackButtonProtection, checkAuthAndPreventCaching } from '../utils/auth';
+import { getQuizzes } from '../utils/quizApi';
 import '../styles/HomePage.css';
 
 function StudentDashboard() {
   const { modal, closeModal, handleConfirm, showConfirm } = useModal();
-
-  useEffect(() => {
-    checkAuthAndPreventCaching();
-    setupBackButtonProtection();
-  }, []);
+  const [quizzes, setQuizzes] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const stored = window.localStorage.getItem('unihub_user');
   const user = stored ? JSON.parse(stored) : null;
   const studentName = user?.fullName || user?.name || 'Student';
   const avatarSrc = user?.profileImage || '/images/teacher-avatar.jpg';
+
+  useEffect(() => {
+    checkAuthAndPreventCaching();
+    setupBackButtonProtection();
+
+    const fetchQuizzes = async () => {
+      if (!user?.course) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const data = await getQuizzes({ course: user.course });
+        setQuizzes(data || []);
+      } catch (err) {
+        console.error("Error fetching student quizzes:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQuizzes();
+  }, []);
 
   const handleLogout = () => {
     showConfirm(
@@ -117,8 +136,20 @@ function StudentDashboard() {
             <div className="teacher-panel">
               <h2>Upcoming Quizzes</h2>
               <ul className="teacher-list">
-                <li>Quiz 02 – Data Structures (Due Friday)</li>
-                <li>Quiz 01 – Programming Fundamentals (Next Week)</li>
+                {loading ? (
+                  <li>Loading quizzes...</li>
+                ) : quizzes.length > 0 ? (
+                  quizzes.slice(0, 5).map(quiz => (
+                    <li key={quiz._id} style={{ display: 'flex', justifyContent: 'space-between', cursor: 'pointer' }} onClick={() => window.location.href = `/student/quizzes`}>
+                      <span>{quiz.title} - {quiz.course}</span>
+                      <span style={{ fontSize: '0.85em', color: '#666' }}>
+                        {quiz.dueDate ? `Due: ${new Date(quiz.dueDate).toLocaleDateString()}` : 'No due date'}
+                      </span>
+                    </li>
+                  ))
+                ) : (
+                  <li>No quizzes available for your course yet.</li>
+                )}
               </ul>
             </div>
           </section>

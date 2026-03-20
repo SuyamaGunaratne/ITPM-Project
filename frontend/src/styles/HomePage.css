@@ -935,3 +935,150 @@
       border-radius: 1.4rem;
     }
   }
+
+  /* ================ QUIZ MANAGEMENT CARD STYLING ================ */
+  .quiz-management-container {
+    background: #ffffff;
+    border-radius: 2rem;
+    padding: 2rem 2.5rem;
+    border: 1px solid #e5e7eb;
+    margin-top: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  }
+
+  .quiz-management-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+
+  .quiz-management-header h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+  }
+
+  .quiz-cards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  .quiz-card-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2.2rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1.8rem;
+    transition: all 0.3s ease;
+  }
+
+  .quiz-card-item:hover {
+    border-color: #6366f1;
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.08);
+    transform: translateY(-2px);
+  }
+
+  .quiz-card-content h3 {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 0.4rem 0;
+  }
+
+  .quiz-card-meta {
+    font-size: 0.95rem;
+    color: #64748b;
+    margin: 0;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .quiz-card-actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  .btn-purple-gradient {
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    color: white !important;
+    border: none !important;
+    padding: 0.8rem 1.8rem !important;
+    border-radius: 1.2rem !important;
+    font-weight: 700 !important;
+    font-size: 1rem !important;
+    box-shadow: 0 10px 25px rgba(124, 58, 237, 0.35) !important;
+    cursor: pointer;
+    transition: all 0.3s ease !important;
+  }
+
+  .btn-purple-gradient:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 15px 35px rgba(124, 58, 237, 0.45) !important;
+  }
+
+  .btn-edit-badge {
+    background: transparent;
+    border: 2px solid #6366f1;
+    color: #6366f1;
+    padding: 0.6rem 2rem;
+    border-radius: 1.5rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+
+  .btn-edit-badge:hover {
+    background: #6366f1;
+    color: #fff;
+    box-shadow: 0 8px 15px rgba(99, 102, 241, 0.3);
+  }
+
+  .btn-delete-badge {
+    background: transparent;
+    border: 2px solid #ef4444;
+    color: #ef4444;
+    padding: 0.6rem 2rem;
+    border-radius: 1.5rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+
+  .btn-delete-badge:hover {
+    background: #ef4444;
+    color: #fff;
+    box-shadow: 0 8px 15px rgba(239, 68, 68, 0.3);
+  }
+
+  .tab-btn {
+    padding: 0.75rem 2rem;
+    border-radius: 1.2rem;
+    font-weight: 700;
+    font-size: 1rem;
+    border: 2px solid #e2e8f0;
+    background: #fff;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .tab-btn.active {
+    background: #6366f1;
+    color: #fff;
+    border-color: #6366f1;
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+  }
+
+  .tab-btn:hover:not(.active) {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+    color: #1e293b;
+  }

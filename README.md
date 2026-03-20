@@ -204,6 +204,29 @@ After fixing the string, restart the server (`npm run dev` in `backend`).
 - Create admin panel for user management
 - Add boarding search and filtering features
 
+## Troubleshooting
+
+### AI Quiz Generation Setup
+To use the AI Quiz Generation feature, you must configure the Google Gemini API:
+1. Generate an API Key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+2. Add `GEMINI_API_KEY=your_actual_key_here` to the `backend/.env` file.
+3. If your server is already running, **you must completely stop (`Ctrl+C`) and restart your backend terminal** (`npm run dev`) for the new `.env` key to be recognized!
+
+**Important:** AI Question generation only supports **PDF** files. Please ensure you convert PowerPoint presentations (`.ppt` / `.pptx`) to `.pdf` before uploading.
+
+### Quiz Generation Error (`pdfParse is not a function`)
+If you encounter the `pdfParse is not a function` error, make sure you have the correct stable version of `pdf-parse` installed. Fix it by running:
+```bash
+cd backend
+npm install pdf-parse@1.1.1 --save
+```
+
+### Port 5000 Already in Use (Stuck Node Processes)
+If your backend terminal crashes and cannot reconnect to port 5000, you likely have hidden Node processes running in the background. To force-close them in Windows PowerShell:
+```powershell
+Get-Process -Id (Get-NetTCPConnection -LocalPort 5000).OwningProcess | Stop-Process -Force
+```
+
 ## License
 
 This project is part of an ITPM (IT Project Management) course project.
