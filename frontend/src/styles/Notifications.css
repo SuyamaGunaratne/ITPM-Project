@@ -1,50 +1,48 @@
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap');
 
 /* ══════════════════════════════════════════════
-   TOAST CONTAINER — fixed bottom-right stack
+   TOAST STACK CONTAINER
 ══════════════════════════════════════════════ */
-.toast-stack {
+#toast-stack {
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
-  z-index: 9999;
+  z-index: 200;
   display: flex;
   flex-direction: column-reverse;
-  gap: 10px;
+  gap: 0.65rem;
+  pointer-events: none;
   width: 380px;
   max-width: calc(100vw - 3rem);
-  pointer-events: none;
 }
 
 /* ══════════════════════════════════════════════
    TOAST BASE
 ══════════════════════════════════════════════ */
-.toast-container {
+.login-popup {
   pointer-events: all;
+  font-family: 'Sora', system-ui, sans-serif;
   display: flex;
   align-items: flex-start;
   gap: 12px;
   padding: 14px 16px 14px 14px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  font-family: 'Sora', system-ui, -apple-system, sans-serif;
-  font-size: 13px;
+  font-size: 0.9rem;
+  cursor: pointer;
   position: relative;
   overflow: hidden;
-  cursor: pointer;
-  width: 100%;
-
-  animation: toast-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: popupSlideIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   transition: filter 0.15s ease, transform 0.2s ease;
 }
 
-.toast-container:hover {
+.login-popup:hover {
   filter: brightness(1.06);
   transform: translateX(-3px);
 }
 
 /* Animated progress bar at bottom */
-.toast-container::before {
+.login-popup::before {
   content: '';
   position: absolute;
   bottom: 0;
@@ -53,11 +51,12 @@
   width: 100%;
   border-radius: 0 0 16px 16px;
   transform-origin: left center;
-  animation: toast-progress linear 3.8s both;
+  animation: popupProgress 3.2s linear both;
+  background: rgba(255, 255, 255, 0.55);
 }
 
 /* Decorative light orb top-right */
-.toast-container::after {
+.login-popup::after {
   content: '';
   position: absolute;
   top: -55px;
@@ -70,85 +69,9 @@
 }
 
 /* ══════════════════════════════════════════════
-   VARIANT: SUCCESS
+   ICON CIRCLE
 ══════════════════════════════════════════════ */
-.toast-success {
-  background: linear-gradient(120deg, #059669 0%, #047857 100%);
-  color: white;
-  box-shadow: 0 10px 32px rgba(5, 150, 105, 0.45),
-              0 0 0 1px rgba(5, 150, 105, 0.2);
-}
-
-.toast-success::before {
-  background: rgba(255, 255, 255, 0.55);
-}
-
-.toast-success .toast-icon {
-  background: rgba(255, 255, 255, 0.2);
-  color: #a7f3d0;
-}
-
-/* ══════════════════════════════════════════════
-   VARIANT: ERROR
-══════════════════════════════════════════════ */
-.toast-error {
-  background: linear-gradient(120deg, #dc2626 0%, #b91c1c 100%);
-  color: white;
-  box-shadow: 0 10px 32px rgba(220, 38, 38, 0.45),
-              0 0 0 1px rgba(220, 38, 38, 0.2);
-}
-
-.toast-error::before {
-  background: rgba(255, 255, 255, 0.55);
-}
-
-.toast-error .toast-icon {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fca5a5;
-}
-
-/* ══════════════════════════════════════════════
-   VARIANT: WARNING
-══════════════════════════════════════════════ */
-.toast-warning {
-  background: linear-gradient(120deg, #b45309 0%, #d97706 60%, #f59e0b 100%);
-  color: white;
-  box-shadow: 0 10px 32px rgba(217, 119, 6, 0.45),
-              0 0 0 1px rgba(217, 119, 6, 0.2);
-}
-
-.toast-warning::before {
-  background: rgba(255, 255, 255, 0.55);
-}
-
-.toast-warning .toast-icon {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fde68a;
-}
-
-/* ══════════════════════════════════════════════
-   VARIANT: INFO
-══════════════════════════════════════════════ */
-.toast-info {
-  background: linear-gradient(120deg, #4f46e5 0%, #6366f1 60%, #818cf8 100%);
-  color: white;
-  box-shadow: 0 10px 32px rgba(99, 102, 241, 0.45),
-              0 0 0 1px rgba(99, 102, 241, 0.2);
-}
-
-.toast-info::before {
-  background: rgba(255, 255, 255, 0.55);
-}
-
-.toast-info .toast-icon {
-  background: rgba(255, 255, 255, 0.2);
-  color: #c7d2fe;
-}
-
-/* ══════════════════════════════════════════════
-   ICON
-══════════════════════════════════════════════ */
-.toast-icon {
+.login-popup-icon {
   width: 34px;
   height: 34px;
   border-radius: 50%;
@@ -158,70 +81,131 @@
   flex-shrink: 0;
   font-size: 15px;
   font-weight: 700;
-  animation: toast-icon-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+  background: rgba(255, 255, 255, 0.2);
+  animation: iconPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+}
+
+@keyframes iconPop {
+  0%   { opacity: 0; transform: scale(0) rotate(-180deg); }
+  70%  { transform: scale(1.18) rotate(8deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
 }
 
 /* ══════════════════════════════════════════════
-   CONTENT
+   BODY & CLOSE
 ══════════════════════════════════════════════ */
-.toast-content {
+.login-popup-body {
   flex: 1;
   min-width: 0;
   padding-top: 1px;
 }
 
-.toast-title {
+.login-popup-title {
   font-weight: 700;
-  font-size: 13px;
+  font-size: 0.88rem;
   line-height: 1.2;
-  margin: 0 0 3px;
+  margin-bottom: 3px;
+  color: white;
 }
 
-.toast-content p {
-  margin: 0;
-  padding: 0;
-  font-size: 12px;
-  opacity: 0.88;
+.login-popup-msg {
+  font-size: 0.78rem;
   line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
 }
 
-/* ══════════════════════════════════════════════
-   CLOSE BUTTON
-══════════════════════════════════════════════ */
-.toast-close {
+.login-popup-close {
   background: rgba(255, 255, 255, 0.18);
   border: none;
-  color: white;
   cursor: pointer;
+  font-size: 13px;
+  color: white;
   width: 24px;
   height: 24px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
   flex-shrink: 0;
   align-self: flex-start;
   margin-top: 2px;
-  transition: background 0.15s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: background 0.15s ease,
+              transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.toast-close:hover {
+.login-popup-close:hover {
   background: rgba(255, 255, 255, 0.32);
   transform: rotate(90deg) scale(1.1);
 }
 
 /* ══════════════════════════════════════════════
+   VARIANT: SUCCESS
+══════════════════════════════════════════════ */
+.login-popup-success {
+  background: linear-gradient(120deg, #059669 0%, #047857 100%);
+  color: white;
+  box-shadow: 0 10px 32px rgba(5, 150, 105, 0.45),
+              0 0 0 1px rgba(5, 150, 105, 0.2);
+}
+
+.login-popup-success .login-popup-icon {
+  color: #a7f3d0;
+}
+
+/* ══════════════════════════════════════════════
+   VARIANT: ERROR
+══════════════════════════════════════════════ */
+.login-popup-error {
+  background: linear-gradient(120deg, #dc2626 0%, #b91c1c 100%);
+  color: white;
+  box-shadow: 0 10px 32px rgba(220, 38, 38, 0.45),
+              0 0 0 1px rgba(220, 38, 38, 0.2);
+}
+
+.login-popup-error .login-popup-icon {
+  color: #fca5a5;
+}
+
+/* ══════════════════════════════════════════════
+   VARIANT: INFO
+══════════════════════════════════════════════ */
+.login-popup-info {
+  background: linear-gradient(120deg, #4f46e5 0%, #6366f1 60%, #818cf8 100%);
+  color: white;
+  box-shadow: 0 10px 32px rgba(99, 102, 241, 0.45),
+              0 0 0 1px rgba(99, 102, 241, 0.2);
+}
+
+.login-popup-info .login-popup-icon {
+  color: #c7d2fe;
+}
+
+/* ══════════════════════════════════════════════
+   VARIANT: WARNING
+══════════════════════════════════════════════ */
+.login-popup-warning {
+  background: linear-gradient(120deg, #b45309 0%, #d97706 60%, #f59e0b 100%);
+  color: white;
+  box-shadow: 0 10px 32px rgba(217, 119, 6, 0.45),
+              0 0 0 1px rgba(217, 119, 6, 0.2);
+}
+
+.login-popup-warning .login-popup-icon {
+  color: #fde68a;
+}
+
+/* ══════════════════════════════════════════════
    DISMISS STATE (added via JS)
 ══════════════════════════════════════════════ */
-.toast-container.toast-out {
-  animation: toast-out 0.38s cubic-bezier(0.4, 0, 1, 1) forwards;
+.login-popup.popup-out {
+  animation: popupFadeOut 0.38s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 /* ══════════════════════════════════════════════
    KEYFRAMES
 ══════════════════════════════════════════════ */
-@keyframes toast-in {
+@keyframes popupSlideIn {
   from {
     opacity: 0;
     transform: translateX(80px) scale(0.88);
@@ -232,11 +216,11 @@
   }
 }
 
-@keyframes toast-out {
+@keyframes popupFadeOut {
   0% {
     opacity: 1;
     transform: translateX(0) scale(1);
-    max-height: 100px;
+    max-height: 120px;
     margin-bottom: 0;
   }
   60% {
@@ -246,35 +230,29 @@
   100% {
     opacity: 0;
     max-height: 0;
+    margin-bottom: -0.65rem;
     padding-top: 0;
     padding-bottom: 0;
-    margin-bottom: -10px;
   }
 }
 
-@keyframes toast-progress {
+@keyframes popupProgress {
   from { transform: scaleX(1); }
   to   { transform: scaleX(0); }
-}
-
-@keyframes toast-icon-pop {
-  0%   { opacity: 0; transform: scale(0) rotate(-180deg); }
-  70%  { transform: scale(1.18) rotate(8deg); }
-  100% { opacity: 1; transform: scale(1) rotate(0deg); }
 }
 
 /* ══════════════════════════════════════════════
    MOBILE
 ══════════════════════════════════════════════ */
 @media (max-width: 480px) {
-  .toast-stack {
+  #toast-stack {
     bottom: 1rem;
     right: 1rem;
     left: 1rem;
     width: auto;
   }
 
-  @keyframes toast-in {
+  @keyframes popupSlideIn {
     from {
       opacity: 0;
       transform: translateY(40px) scale(0.92);
@@ -285,8 +263,8 @@
     }
   }
 
-  @keyframes toast-out {
-    0%   { opacity: 1; transform: translateY(0) scale(1); max-height: 100px; }
+  @keyframes popupFadeOut {
+    0%   { opacity: 1; transform: translateY(0) scale(1); max-height: 120px; }
     60%  { opacity: 0; transform: translateY(30px) scale(0.93); }
     100% { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; }
   }
