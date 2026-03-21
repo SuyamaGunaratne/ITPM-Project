@@ -1,8 +1,9 @@
 const StudentPost = require('../models/StudentPost');
+const PostRequest = require('../models/PostRequest');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 
-// Create a new student post (pending approval)
+// Create a new student post request (pending approval)
 const createPost = async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ message: 'Authentication required' });
@@ -18,7 +19,7 @@ const createPost = async (req, res) => {
       return res.status(400).json({ message: 'Title and content are required' });
     }
 
-    const post = new StudentPost({
+    const postRequest = new PostRequest({
       title: title.trim(),
       content: content.trim(),
       author: req.user._id,
@@ -26,13 +27,13 @@ const createPost = async (req, res) => {
     });
 
     if (imageData && imageContentType) {
-      post.image = {
+      postRequest.image = {
         data: Buffer.from(imageData, 'base64'),
         contentType: imageContentType,
       };
     }
 
-    await post.save();
+    await postRequest.save();
 
     // notify admins for approval
     try {
@@ -41,15 +42,15 @@ const createPost = async (req, res) => {
         Notification.create({
           user: admin._id,
           type: 'admin_request',
-          post: post._id,
-          message: `New student concern pending approval: "${post.title}"`,
+          postRequest: postRequest._id,
+          message: `New student concern pending approval: "${postRequest.title}"`,
         })
       ));
     } catch (notifyErr) {
       console.error('Failed to create admin notifications:', notifyErr);
     }
 
-    res.status(201).json({ message: 'Post submitted and pending admin approval', post });
+    res.status(201).json({ message: 'Post submitted and pending admin approval', post: postRequest });
   } catch (error) {
     console.error('Error creating community post:', error);
     res.status(500).json({ message: 'Failed to create post', error: error.message });
@@ -111,10 +112,36 @@ const getMyPosts = async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ message: 'Authentication required' });
 
-    const posts = await StudentPost.find({ author: req.user._id })
+    // Get pending posts from PostRequest table
+    const postRequests = await PostRequest.find({ author: req.user._id })
       .sort({ createdAt: -1 });
 
-    const transformed = posts.map((p) => {
+    // Get approved posts from StudentPost table
+    const studentPosts = await StudentPost.find({ author: req.user._id })
+      .sort({ createdAt: -1 });
+
+    // Transform PostRequest data
+    const transformedRequests = postRequests.map((p) => {
+      const imageUrl = p.image?.data && p.image?.contentType
+        ? `data:${p.image.contentType};base64,${p.image.data.toString('base64')}`
+        : null;
+
+      return {
+        _id: p._id,
+        title: p.title,
+        content: p.content,
+        image: imageUrl,
+        status: 'pending',
+        reviewReason: p.reviewReason || '',
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        likesCount: 0,
+        source: 'postRequest', // Mark origin for potential frontend use
+      };
+    });
+
+    // Transform StudentPost data
+    const transformedPosts = studentPosts.map((p) => {
       const imageUrl = p.image?.data && p.image?.contentType
         ? `data:${p.image.contentType};base64,${p.image.data.toString('base64')}`
         : null;
@@ -131,10 +158,15 @@ const getMyPosts = async (req, res) => {
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,
         likesCount: likes.length,
+        source: 'studentPost',
       };
     });
 
-    res.json(transformed);
+    // Combine and sort by creation date (newest first)
+    const allPosts = [...transformedRequests, ...transformedPosts]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json(allPosts);
   } catch (error) {
     console.error('Error getting user posts:', error);
     res.status(500).json({ message: 'Failed to fetch your posts', error: error.message });
@@ -242,59 +274,71 @@ const getComments = async (req, res) => {
   }
 };
 
-// Admin: list pending posts
+// Admin: list pending post requests
 const getPendingPosts = async (req, res) => {
   try {
-    const posts = await StudentPost.find({ status: 'pending' })
+    const postRequests = await PostRequest.find({ status: 'pending' })
       .sort({ createdAt: -1 })
       .populate('author', 'fullName email');
 
-    res.json(posts);
+    res.json(postRequests);
   } catch (error) {
     console.error('Error fetching pending posts:', error);
     res.status(500).json({ message: 'Failed to fetch pending posts', error: error.message });
   }
 };
 
-// Admin: approve a post
+// Admin: approve a post request and move to StudentPost
 const approvePost = async (req, res) => {
   try {
     const { postId } = req.params;
 
-    const post = await StudentPost.findById(postId);
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-    if (post.status !== 'pending') {
-      return res.status(400).json({ message: 'Post has already been reviewed' });
+    const postRequest = await PostRequest.findById(postId);
+    if (!postRequest) return res.status(404).json({ message: 'Post request not found' });
+    if (postRequest.status !== 'pending') {
+      return res.status(400).json({ message: 'Post request has already been reviewed' });
     }
 
-    post.status = 'approved';
-    post.reviewedBy = req.user._id;
-    post.reviewReason = req.body.reviewReason || '';
-    post.reviewedAt = new Date();
+    // Create approved post in StudentPost table
+    const approvedPost = new StudentPost({
+      title: postRequest.title,
+      content: postRequest.content,
+      author: postRequest.author,
+      image: postRequest.image,
+      status: 'approved',
+      reviewedBy: req.user._id,
+      reviewReason: req.body.reviewReason || '',
+      createdAt: postRequest.createdAt,
+      updatedAt: new Date(),
+    });
 
-    await post.save();
+    await approvedPost.save();
 
+    // Delete from PostRequest table
+    await PostRequest.deleteOne({ _id: postId });
+
+    // Notify student of approval
     try {
-      if (post.author) {
+      if (postRequest.author) {
         await Notification.create({
-          user: post.author,
+          user: postRequest.author,
           type: 'post_approved',
-          post: post._id,
-          message: `Your concern "${post.title}" was approved by admin.`,
+          post: approvedPost._id,
+          message: `Your concern "${postRequest.title}" was approved by admin.`,
         });
       }
     } catch (notifyErr) {
       console.error('Failed to create user notification:', notifyErr);
     }
 
-    res.json({ message: 'Post approved successfully' });
+    res.json({ message: 'Post approved successfully and moved to StudentPost', post: approvedPost });
   } catch (error) {
     console.error('Error approving post:', error);
     res.status(500).json({ message: 'Failed to approve post', error: error.message });
   }
 };
 
-// Admin: reject a post
+// Admin: reject a post request
 const rejectPost = async (req, res) => {
   try {
     const { postId } = req.params;
@@ -304,20 +348,29 @@ const rejectPost = async (req, res) => {
       return res.status(400).json({ message: 'Review reason is required when rejecting' });
     }
 
-    const post = await StudentPost.findById(postId);
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-    if (post.status !== 'pending') {
-      return res.status(400).json({ message: 'Post has already been reviewed' });
+    const postRequest = await PostRequest.findById(postId);
+    if (!postRequest) return res.status(404).json({ message: 'Post request not found' });
+    if (postRequest.status !== 'pending') {
+      return res.status(400).json({ message: 'Post request has already been reviewed' });
     }
 
-    post.status = 'rejected';
-    post.reviewReason = reviewReason.trim();
-    post.reviewedBy = req.user._id;
-    post.reviewedAt = new Date();
+    // Notify student of rejection
+    try {
+      if (postRequest.author) {
+        await Notification.create({
+          user: postRequest.author,
+          type: 'post_rejected',
+          message: `Your concern "${postRequest.title}" was rejected by admin. Reason: ${reviewReason.trim()}`,
+        });
+      }
+    } catch (notifyErr) {
+      console.error('Failed to create rejection notification:', notifyErr);
+    }
 
-    await post.save();
+    // Delete from PostRequest table
+    await PostRequest.deleteOne({ _id: postId });
 
-    res.json({ message: 'Post rejected successfully' });
+    res.json({ message: 'Post request rejected and removed successfully' });
   } catch (error) {
     console.error('Error rejecting post:', error);
     res.status(500).json({ message: 'Failed to reject post', error: error.message });
@@ -335,7 +388,23 @@ const updatePost = async (req, res) => {
       return res.status(400).json({ message: 'Title and content are required' });
     }
 
-    const post = await StudentPost.findById(postId);
+    // Check if post is in PostRequest (pending)
+    let post = await PostRequest.findById(postId);
+    if (post) {
+      if (post.author.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Not authorized to edit this post' });
+      }
+
+      post.title = title.trim();
+      post.content = content.trim();
+      post.updatedAt = new Date();
+      await post.save();
+
+      return res.json({ message: 'Post updated successfully', post });
+    }
+
+    // Check if post is in StudentPost (approved/other)
+    post = await StudentPost.findById(postId);
     if (!post) return res.status(404).json({ message: 'Post not found' });
 
     if (post.author.toString() !== req.user._id.toString()) {
@@ -345,11 +414,24 @@ const updatePost = async (req, res) => {
     post.title = title.trim();
     post.content = content.trim();
 
-    // Edited topics are resubmitted for moderation, if not admin.
+    // Edited approved posts go back for re-moderation
     if (post.status === 'approved') {
-      post.status = 'pending';
-      post.reviewReason = '';
-      post.reviewedBy = null;
+      // Move approved post back to PostRequest for re-review
+      const postRequest = new PostRequest({
+        title: post.title,
+        content: post.content,
+        author: post.author,
+        image: post.image,
+        status: 'pending',
+      });
+
+      await postRequest.save();
+      await StudentPost.deleteOne({ _id: postId });
+
+      return res.json({ 
+        message: 'Post updated and resubmitted for admin approval', 
+        post: postRequest 
+      });
     }
 
     post.updatedAt = new Date();
@@ -367,7 +449,20 @@ const deletePost = async (req, res) => {
     if (!req.user) return res.status(401).json({ message: 'Authentication required' });
 
     const { postId } = req.params;
-    const post = await StudentPost.findById(postId);
+
+    // Check if post is in PostRequest (pending)
+    let post = await PostRequest.findById(postId);
+    if (post) {
+      if (post.author.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Not authorized to delete this post' });
+      }
+
+      await PostRequest.deleteOne({ _id: postId });
+      return res.json({ message: 'Post deleted successfully' });
+    }
+
+    // Check if post is in StudentPost (approved/other status)
+    post = await StudentPost.findById(postId);
     if (!post) return res.status(404).json({ message: 'Post not found' });
 
     if (post.author.toString() !== req.user._id.toString()) {
