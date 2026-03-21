@@ -5,13 +5,19 @@ const {
   addBoarding,
   getMyBoardings,
   updateBoarding,
-  deleteBoarding
+  deleteBoarding,
+  getAllBoardings,
+  getBoardingById
 } = require('../controllers/boardingController');
 
-// All routes are protected — require JWT token
-router.post('/', protect, addBoarding);           // POST /api/boardings
-router.get('/my', protect, getMyBoardings);        // GET  /api/boardings/my
-router.put('/:id', protect, updateBoarding);       // PUT  /api/boardings/:id
+// Public routes — no auth required (Student side)
+router.get('/', getAllBoardings);                  // GET  /api/boardings?location=&minRent=&maxRent=&type=&search=
+router.get('/my', protect, getMyBoardings);        // GET  /api/boardings/my  (must be before /:id)
+router.get('/:id', getBoardingById);               // GET  /api/boardings/:id
+
+// Protected routes — require JWT token (Owner side)
+router.post('/', protect, addBoarding);            // POST   /api/boardings
+router.put('/:id', protect, updateBoarding);       // PUT    /api/boardings/:id
 router.delete('/:id', protect, deleteBoarding);    // DELETE /api/boardings/:id
 
 module.exports = router;

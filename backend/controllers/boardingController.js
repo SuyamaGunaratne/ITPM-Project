@@ -95,9 +95,73 @@ const deleteBoarding = async (req, res) => {
   }
 };
 
+// @desc    Search all boardings (with filters)
+// @route   GET /api/boardings?location=xxx&minRent=1000&maxRent=5000&type=single&search=keyword
+// @access  Public (Students)
+const getAllBoardings = async (req, res) => {
+  try {
+    const { location, minRent, maxRent, type, search } = req.query;
+
+    // Build filter object — only show active boardings to students
+    const filter = { status: 'active' };
+
+    if (location) {
+      filter.location = { $regex: location, $options: 'i' };
+    }
+
+    if (type) {
+      filter.type = type;
+    }
+
+    if (minRent || maxRent) {
+      filter.rent = {};
+      if (minRent) filter.rent.$gte = Number(minRent);
+      if (maxRent) filter.rent.$lte = Number(maxRent);
+    }
+
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { location: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const boardings = await Boarding.find(filter)
+      .populate('owner', 'fullName email')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(boardings);
+  } catch (error) {
+    console.error('Error searching boardings:', error.message);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Get single boarding details
+// @route   GET /api/boardings/:id
+// @access  Public (Students)
+const getBoardingById = async (req, res) => {
+  try {
+    const boarding = await Boarding.findById(req.params.id)
+      .populate('owner', 'fullName email');
+
+    if (!boarding) {
+      return res.status(404).json({ message: 'Boarding not found' });
+    }
+
+    res.status(200).json(boarding);
+  } catch (error) {
+    console.error('Error fetching boarding:', error.message);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   addBoarding,
   getMyBoardings,
   updateBoarding,
-  deleteBoarding
+  deleteBoarding,
+  getAllBoardings,
+  getBoardingById
 };
