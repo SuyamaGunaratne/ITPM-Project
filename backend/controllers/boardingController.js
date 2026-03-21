@@ -103,8 +103,8 @@ const getAllBoardings = async (req, res) => {
   try {
     const { location, minRent, maxRent, type, search } = req.query;
 
-    // Build filter object — only show active boardings to students
-    const filter = { status: 'active' };
+    // Build filter object
+    const filter = {};
 
     if (location) {
       filter.location = { $regex: location, $options: 'i' };
