@@ -5,7 +5,7 @@ const Boarding = require('../models/BoardingModel');
 // @access  Private (Boarding Owner)
 const addBoarding = async (req, res) => {
   try {
-    const { title, description, location, type, rent, totalRooms, vacantRooms, amenities, images } = req.body;
+    const { title, description, location, type, rent, totalRooms, vacantRooms, amenities, images, contactNumber } = req.body;
 
     const boarding = await Boarding.create({
       title,
@@ -17,6 +17,7 @@ const addBoarding = async (req, res) => {
       vacantRooms,
       amenities,
       images,
+      contactNumber,
       owner: req.user._id
     });
 

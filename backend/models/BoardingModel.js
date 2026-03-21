@@ -12,6 +12,7 @@ const boardingSchema = new Schema({
     vacantRooms: { type: Number },
     amenities: [String],
     images: [String],
+    contactNumber: { type: String, required: true },
     owner: { type: ObjectId, ref: 'User', required: true },
     status: { type: String, enum: ['pending', 'active', 'rejected'], default: 'pending' }
 }, { timestamps: true });
