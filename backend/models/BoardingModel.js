@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const { Schema } = mongoose;
+const ObjectId = Schema.Types.ObjectId;
 
 const boardingSchema = new Schema({
     title: { type: String, required: true },
