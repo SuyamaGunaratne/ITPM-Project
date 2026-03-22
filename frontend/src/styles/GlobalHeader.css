@@ -1,0 +1,385 @@
+/* ================================================================
+   GlobalHeader.css — Scoped styles for GlobalHeader component
+   All selectors are prefixed with .gh- to prevent leaking into
+   other page components.
+   ================================================================ */
+
+/* ── Google Font import (Sora: geometric, modern, distinct) ── */
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap');
+
+/* ── CSS custom properties (local scope) ── */
+.gh-navbar {
+  --gh-indigo:    #6366f1;
+  --gh-violet:    #a855f7;
+  --gh-pink:      #ec4899;
+  --gh-dark:      #1f2937;
+  --gh-mid:       #4b5563;
+  --gh-light:     rgba(255, 255, 255, 0.82);
+  --gh-blur:      blur(18px) saturate(200%);
+  --gh-radius:    9999px;
+  --gh-transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ══════════════════════════════════════════════
+   BASE BAR
+══════════════════════════════════════════════ */
+.gh-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  width: 100%;
+  font-family: 'Sora', system-ui, sans-serif;
+
+  /* Glassmorphism */
+  background: var(--gh-light);
+  backdrop-filter: var(--gh-blur);
+  -webkit-backdrop-filter: var(--gh-blur);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.10);
+  box-shadow: 0 4px 32px rgba(99, 102, 241, 0.10);
+
+  /* Animated gradient underline */
+  background-image: linear-gradient(
+    to right,
+    var(--gh-indigo),
+    var(--gh-violet),
+    var(--gh-pink),
+    var(--gh-indigo)
+  );
+  background-repeat: no-repeat;
+  background-size: 200% 2px;
+  background-position: bottom;
+  animation: gh-underline-slide 4s linear infinite;
+
+  /* Restore glass bg above the pseudo-underline trick */
+  background-color: var(--gh-light);
+
+  transition: box-shadow 0.4s ease, background-color 0.4s ease;
+}
+
+/* Sliding gradient border at bottom */
+@keyframes gh-underline-slide {
+  0%   { background-position: 0% bottom; }
+  100% { background-position: 200% bottom; }
+}
+
+/* Inner container */
+.gh-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 5vw;
+  gap: 1rem;
+}
+
+/* ══════════════════════════════════════════════
+   BRAND / LEFT SIDE
+══════════════════════════════════════════════ */
+.gh-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.gh-logo {
+  height: 38px;
+  width: auto;
+  object-fit: contain;
+  transition: transform var(--gh-transition);
+  filter: drop-shadow(0 4px 10px rgba(99, 102, 241, 0.35));
+}
+
+.gh-brand:hover .gh-logo {
+  transform: rotate(-6deg) scale(1.08);
+}
+
+.gh-title-group {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.gh-title {
+  font-size: 1.45rem;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+
+  /* Animated gradient text */
+  background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899, #6366f1);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gh-text-flow 6s ease infinite;
+}
+
+@keyframes gh-text-flow {
+  0%   { background-position: 0%   center; }
+  50%  { background-position: 100% center; }
+  100% { background-position: 0%   center; }
+}
+
+.gh-tagline {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gh-mid);
+  opacity: 0.8;
+}
+
+/* ══════════════════════════════════════════════
+   NAV LINKS
+══════════════════════════════════════════════ */
+.gh-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.gh-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--gh-radius);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--gh-dark);
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: color 0.22s ease, background 0.22s ease, border-color 0.22s ease,
+              transform var(--gh-transition), box-shadow 0.22s ease;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Ripple fill on hover */
+.gh-link::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(99,102,241,0.12), rgba(168,85,247,0.12));
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+
+.gh-link:hover::before {
+  opacity: 1;
+}
+
+.gh-link:hover {
+  color: var(--gh-indigo);
+  border-color: rgba(99, 102, 241, 0.28);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(99, 102, 241, 0.18);
+}
+
+/* Animated underline on active */
+.gh-link::after {
+  content: '';
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--gh-indigo), var(--gh-pink));
+  transition: width 0.28s ease, left 0.28s ease;
+}
+
+.gh-link:hover::after,
+.gh-link-active::after {
+  width: calc(100% - 2.2rem);
+  left: 1.1rem;
+}
+
+.gh-link-active {
+  background: linear-gradient(90deg, rgba(99,102,241,0.13), rgba(168,85,247,0.10));
+  color: var(--gh-indigo);
+  border-color: rgba(99, 102, 241, 0.22);
+}
+
+/* Icon inside link */
+.gh-link-icon {
+  font-size: 1rem;
+  transition: transform var(--gh-transition);
+}
+
+.gh-link:hover .gh-link-icon {
+  transform: scale(1.25) rotate(-5deg);
+}
+
+/* ══════════════════════════════════════════════
+   CTA BUTTON (Register)
+══════════════════════════════════════════════ */
+.gh-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.5rem;
+  border-radius: var(--gh-radius);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: white;
+  text-decoration: none;
+  background: linear-gradient(90deg, var(--gh-indigo), var(--gh-violet), var(--gh-pink));
+  background-size: 200% auto;
+  border: none;
+  box-shadow: 0 10px 28px rgba(99, 102, 241, 0.40);
+  transition: background-position 0.5s ease, transform var(--gh-transition),
+              box-shadow 0.28s ease;
+  animation: gh-cta-glow 3s ease infinite alternate;
+  white-space: nowrap;
+}
+
+@keyframes gh-cta-glow {
+  from { box-shadow: 0 10px 28px rgba(99, 102, 241, 0.40); }
+  to   { box-shadow: 0 14px 40px rgba(168, 85, 247, 0.55); }
+}
+
+.gh-cta:hover {
+  background-position: right center;
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 20px 48px rgba(99, 102, 241, 0.55);
+}
+
+.gh-cta-icon {
+  font-size: 1rem;
+  transition: transform var(--gh-transition);
+}
+
+.gh-cta:hover .gh-cta-icon {
+  transform: translateX(3px) scale(1.2);
+}
+
+/* ══════════════════════════════════════════════
+   HAMBURGER (mobile)
+══════════════════════════════════════════════ */
+.gh-hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  padding: 0.4rem;
+  cursor: pointer;
+  border-radius: 0.6rem;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.gh-hamburger:hover {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.gh-bar {
+  display: block;
+  width: 24px;
+  height: 2.5px;
+  border-radius: 2px;
+  background: var(--gh-indigo);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity 0.25s ease, width 0.25s ease;
+  transform-origin: center;
+}
+
+/* Animated hamburger → X */
+.gh-hamburger[aria-expanded="true"] .gh-bar:nth-child(1) {
+  transform: translateY(7.5px) rotate(45deg);
+}
+.gh-hamburger[aria-expanded="true"] .gh-bar:nth-child(2) {
+  opacity: 0;
+  width: 0;
+}
+.gh-hamburger[aria-expanded="true"] .gh-bar:nth-child(3) {
+  transform: translateY(-7.5px) rotate(-45deg);
+}
+
+/* ══════════════════════════════════════════════
+   MOBILE DRAWER
+══════════════════════════════════════════════ */
+.gh-drawer {
+  display: none;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0 5vw 1.2rem;
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+              padding-bottom 0.3s ease;
+}
+
+.gh-drawer-open {
+  max-height: 320px;
+  padding-bottom: 1.2rem;
+}
+
+.gh-drawer .gh-link {
+  justify-content: flex-start;
+  border-radius: 0.9rem;
+  padding: 0.75rem 1.1rem;
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  background: rgba(248, 250, 252, 0.7);
+  animation: gh-drawer-item 0.35s ease both;
+}
+
+.gh-drawer .gh-link:nth-child(1) { animation-delay: 0.04s; }
+.gh-drawer .gh-link:nth-child(2) { animation-delay: 0.10s; }
+.gh-drawer .gh-link:nth-child(3) { animation-delay: 0.16s; }
+
+@keyframes gh-drawer-item {
+  from { opacity: 0; transform: translateX(-14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.gh-drawer .gh-cta {
+  margin-top: 0.3rem;
+  justify-content: center;
+}
+
+/* ══════════════════════════════════════════════
+   SCROLL SHADOW (applied via JS class)
+══════════════════════════════════════════════ */
+.gh-navbar.gh-scrolled {
+  background-color: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 40px rgba(99, 102, 241, 0.18);
+}
+
+/* ══════════════════════════════════════════════
+   ENTRANCE ANIMATION
+══════════════════════════════════════════════ */
+@keyframes gh-enter {
+  from { opacity: 0; transform: translateY(-100%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.gh-navbar {
+  animation: gh-enter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+══════════════════════════════════════════════ */
+
+/* Tablet */
+@media (max-width: 900px) {
+  .gh-tagline { display: none; }
+  .gh-title   { font-size: 1.25rem; }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .gh-hamburger { display: flex; }
+  .gh-nav       { display: none; }
+  .gh-drawer    { display: flex; }
+
+  .gh-inner {
+    padding: 0.75rem 4vw;
+    flex-wrap: wrap;
+  }
+}

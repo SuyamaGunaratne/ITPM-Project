@@ -34,4 +34,25 @@ const protect = async (req, res, next) => {
 };
 
 // Exporting as an object containing the function
-module.exports = { protect };
+const authorize = (...roles) => {
+  // Normalize allowed roles to lowercase for resilient matching.
+  const normalizedAllowed = roles.map((r) => String(r).toLowerCase().trim());
+
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Not authorized' });
+    }
+
+    const userRole = String(req.user.role || '').toLowerCase().trim();
+
+    if (!normalizedAllowed.includes(userRole)) {
+      return res.status(403).json({
+        message: `Forbidden: insufficient permissions (role: ${req.user.role || 'unknown'})`,
+      });
+    }
+
+    next();
+  };
+};
+
+module.exports = { protect, authorize };

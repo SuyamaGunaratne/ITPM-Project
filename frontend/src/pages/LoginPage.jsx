@@ -1,22 +1,103 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import '../styles/HomePage.css';
+import '../styles/Notifications.css';
 
+/* ─────────────────────────────────────────────
+   Inline notification hook — no separate file
+   ───────────────────────────────────────────── */
+const ICONS = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
+
+function useNotification() {
+  const [toasts, setToasts] = useState([]);
+  const timers = useRef({});
+
+  const dismiss = useCallback((id) => {
+    clearTimeout(timers.current[id]);
+    setToasts((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, out: true } : t))
+    );
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 420);
+  }, []);
+
+  const showNotification = useCallback(
+    (type = 'info', title = '', message = '') => {
+      const id = Date.now() + Math.random();
+      setToasts((prev) => [{ id, type, title, message, out: false }, ...prev]);
+      timers.current[id] = setTimeout(() => dismiss(id), 3200);
+      return id;
+    },
+    [dismiss]
+  );
+
+  const pauseTimer = useCallback((id) => {
+    clearTimeout(timers.current[id]);
+  }, []);
+
+  const resumeTimer = useCallback(
+    (id) => {
+      timers.current[id] = setTimeout(() => dismiss(id), 1800);
+    },
+    [dismiss]
+  );
+
+  const NotificationPortal = useCallback(
+    () => (
+      <div id="toast-stack" aria-live="polite">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            role="alert"
+            className={[
+              'login-popup',
+              `login-popup-${toast.type}`,
+              toast.out ? 'popup-out' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            onClick={() => dismiss(toast.id)}
+            onMouseEnter={() => pauseTimer(toast.id)}
+            onMouseLeave={() => resumeTimer(toast.id)}
+          >
+            <span className="login-popup-icon" aria-hidden="true">
+              {ICONS[toast.type]}
+            </span>
+            <div className="login-popup-body">
+              {toast.title && (
+                <div className="login-popup-title">{toast.title}</div>
+              )}
+              {toast.message && (
+                <div className="login-popup-msg">{toast.message}</div>
+              )}
+            </div>
+            <button
+              className="login-popup-close"
+              aria-label="Dismiss"
+              onClick={(e) => {
+                e.stopPropagation();
+                dismiss(toast.id);
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
+    ),
+    [toasts, dismiss, pauseTimer, resumeTimer]
+  );
+
+  return { showNotification, NotificationPortal };
+}
+
+/* ─────────────────────────────────────────────
+   LoginPage
+   ───────────────────────────────────────────── */
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [popup, setPopup] = useState({
-    type: '', // 'success' | 'error'
-    message: '',
-    visible: false,
-  });
 
-  const showPopup = (type, message) => {
-    setPopup({ type, message, visible: true });
-    setTimeout(() => {
-      setPopup((prev) => ({ ...prev, visible: false }));
-    }, 2500);
-  };
+  const { showNotification, NotificationPortal } = useNotification();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,7 +114,7 @@ function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        showPopup('error', data.message || 'Invalid login. Try again.');
+        showNotification('error', 'Login failed', data.message || 'Invalid credentials. Try again.');
         return;
       }
 
@@ -42,32 +123,17 @@ function LoginPage() {
       let target = '/';
       let roleLabel = 'User';
       switch (data.role) {
-        case 'teacher':
-          target = '/teacher/dashboard';
-          roleLabel = 'Teacher';
-          break;
-        case 'student':
-          target = '/student/dashboard';
-          roleLabel = 'Student';
-          break;
-        case 'admin':
-          target = '/admin/dashboard';
-          roleLabel = 'Admin';
-          break;
-        case 'boardingOwner':
-          target = '/boarding/dashboard';
-          roleLabel = 'Boarding Owner';
-          break;
-        default:
-          target = '/';
+        case 'teacher':       target = '/teacher/dashboard';  roleLabel = 'Teacher';        break;
+        case 'student':       target = '/student/dashboard';  roleLabel = 'Student';        break;
+        case 'admin':         target = '/admin/dashboard';    roleLabel = 'Admin';          break;
+        case 'boardingOwner': target = '/boarding/dashboard'; roleLabel = 'Boarding Owner'; break;
+        default:              target = '/';
       }
 
-      showPopup('success', `Welcome back, ${data.name || roleLabel}!`);
-      setTimeout(() => {
-        window.location.href = target;
-      }, 1400);
+      showNotification('success', `Welcome back, ${data.name || roleLabel}!`, 'Redirecting to your dashboard…');
+      setTimeout(() => { window.location.href = target; }, 1400);
     } catch {
-      showPopup('error', 'Server unreachable. Please try again later.');
+      showNotification('error', 'Server unreachable', 'Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -75,20 +141,6 @@ function LoginPage() {
 
   return (
     <div className="home-root login-root">
-      <header className="navbar">
-        <div className="navbar-left">
-          <img src="/logo.png" alt="UniHub Logo" className="navbar-logo" />
-          <span className="navbar-title">UniHub LMS</span>
-        </div>
-        <nav className="navbar-links">
-          <button
-            className="btn-outline"
-            onClick={() => (window.location.href = '/')}
-          >
-            Back to Home
-          </button>
-        </nav>
-      </header>
 
       <main className="login-main">
         <section className="login-card">
@@ -133,27 +185,16 @@ function LoginPage() {
             </div>
 
             <div className="login-meta">
-              <a href="#forgot" className="login-link">
-                Forgot your password?
-              </a>
+              <a href="#forgot" className="login-link">Forgot your password?</a>
               <span className="divider-dot">•</span>
-              <a href="#help" className="login-link">
-                Need help?
-              </a>
+              <a href="#help" className="login-link">Need help?</a>
             </div>
           </form>
         </section>
       </main>
 
-      {popup.visible && (
-        <div
-          className={`login-popup ${
-            popup.type === 'success' ? 'login-popup-success' : 'login-popup-error'
-          }`}
-        >
-          {popup.message}
-        </div>
-      )}
+      {/* Toast notifications render here, fixed top-right */}
+      <NotificationPortal />
 
       <footer className="footer">
         <div>© {new Date().getFullYear()} UniHub LMS. All rights reserved.</div>
