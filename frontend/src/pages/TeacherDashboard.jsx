@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import useModal from '../hooks/useModal';
 import Modal from '../components/Modal';
 import { secureLogout, setupBackButtonProtection, checkAuthAndPreventCaching } from '../utils/auth';
+import { getQuizzes } from '../utils/quizApi';
 import '../styles/HomePage.css';
 
 function TeacherDashboard() {
@@ -18,26 +19,38 @@ function TeacherDashboard() {
     enrolledStudents: '...',
     pendingQuizzes: '...',
   });
+  const [quizzes, setQuizzes] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     checkAuthAndPreventCaching();
     setupBackButtonProtection();
 
-    const fetchStats = async () => {
+    const fetchDashboardData = async () => {
+      if (!user?._id) return;
+      setLoading(true);
       try {
-        const res = await fetch('http://localhost:5000/api/stats/teacher-dashboard');
-        if (!res.ok) return;
-        const data = await res.json();
-        setStats({
-          activeCourses: data.activeCourses ?? 0,
-          enrolledStudents: data.enrolledStudents ?? 0,
-          pendingQuizzes: data.pendingQuizzes ?? 0,
-        });
-      } catch {
-        // keep placeholders
+        // Fetch stats with teacherId query param
+        const statsRes = await fetch(`http://localhost:5000/api/stats/teacher-dashboard?teacherId=${user._id}`);
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          setStats({
+            activeCourses: statsData.activeCourses ?? 0,
+            enrolledStudents: statsData.enrolledStudents ?? 0,
+            pendingQuizzes: statsData.pendingQuizzes ?? 0,
+          });
+        }
+
+        // Fetch recent quizzes
+        const quizData = await getQuizzes({ teacher: user._id });
+        setQuizzes(quizData || []);
+      } catch (err) {
+        console.error("Error fetching teacher dashboard data:", err);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchStats();
+    fetchDashboardData();
   }, []);
 
   const handleLogout = () => {
@@ -137,10 +150,10 @@ function TeacherDashboard() {
               </p>
             </div>
             <div className="teacher-card">
-              <h3>Pending Quizzes</h3>
+              <h3>Total Published Quizzes</h3>
               <p className="teacher-card-value">{stats.pendingQuizzes}</p>
               <p className="teacher-card-sub">
-                Draft quizzes waiting to be published.
+                Quizzes you have published for students.
               </p>
             </div>
           </section>
@@ -155,10 +168,22 @@ function TeacherDashboard() {
               </ul>
             </div>
             <div className="teacher-panel">
-              <h2>Upcoming Quizzes</h2>
+              <h2>Your Published Quizzes</h2>
               <ul className="teacher-list">
-                <li>Quiz 02 – OOP Concepts (Due Friday)</li>
-                <li>Quiz 01 – Database Design (Next Week)</li>
+                {loading ? (
+                  <li>Loading quizzes...</li>
+                ) : quizzes.length > 0 ? (
+                  quizzes.slice(0, 5).map(quiz => (
+                    <li key={quiz._id} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>{quiz.title} ({quiz.course})</span>
+                      <span style={{ fontSize: '0.85em', color: '#666' }}>
+                        {quiz.dueDate ? `Due: ${new Date(quiz.dueDate).toLocaleDateString()}` : 'No due date'}
+                      </span>
+                    </li>
+                  ))
+                ) : (
+                  <li>No quizzes published yet.</li>
+                )}
               </ul>
             </div>
           </section>

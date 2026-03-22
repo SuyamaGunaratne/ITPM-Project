@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Quiz = require('../models/Quiz');
 
 // returns simple counts for homepage
 exports.getGlobalStats = async (req, res) => {
@@ -29,10 +30,15 @@ exports.getTeacherDashboardStats = async (req, res) => {
     const studentCount = await User.countDocuments({ role: 'student' });
     const courseNames = await User.distinct('course', { course: { $exists: true, $ne: '' } });
 
+    // count quizzes for this teacher if teacher ID is provided, otherwise total quizzes
+    const teacherId = req.query.teacherId;
+    const quizFilter = teacherId ? { teacher: teacherId } : {};
+    const quizCount = await Quiz.countDocuments(quizFilter);
+
     return res.json({
       activeCourses: courseNames.length,
       enrolledStudents: studentCount,
-      pendingQuizzes: 0, // placeholder until quiz model exists
+      pendingQuizzes: quizCount, 
     });
   } catch (err) {
     console.error('Error getting teacher dashboard stats:', err);
