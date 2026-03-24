@@ -58,7 +58,7 @@ function App() {
 
   return (
     <>
-      <GlobalHeader showNav={showNav} />
+      {showNav && <GlobalHeader showNav={showNav} />}
       {renderPage()}
     </>
   );

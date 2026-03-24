@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import useModal from '../hooks/useModal';
 import Modal from '../components/Modal';
+import DashboardLayout from '../components/DashboardLayout';
+import { studentNavItems } from '../utils/navConfig';
 import { secureLogout, setupBackButtonProtection, checkAuthAndPreventCaching } from '../utils/auth';
-import '../styles/HomePage.css';
 
 function StudentBoardings() {
   const { modal, closeModal, handleConfirm, showConfirm } = useModal();
@@ -21,105 +22,33 @@ function StudentBoardings() {
     showConfirm(
       'Logout Confirmation',
       'Are you sure you want to logout? You will be redirected to the login page.',
-      () => {
-        secureLogout();
-      }
+      () => secureLogout()
     );
   };
 
   return (
-    <div className="home-root teacher-root">
-      <div className="teacher-layout">
-        <aside className="teacher-sidebar">
-          <div className="sidebar-header">
-            <div className="sidebar-brand">Student Panel</div>
-            <p className="sidebar-sub">Boardings</p>
-          </div>
-
-          <nav className="sidebar-nav">
-            <button
-              className="sidebar-item"
-              onClick={() => (window.location.href = '/student/dashboard')}
-            >
-              <span className="sidebar-bullet" />
-              Dashboard
-            </button>
-            <button
-              className="sidebar-item"
-              onClick={() => (window.location.href = '/student/quizzes')}
-            >
-              <span className="sidebar-bullet" />
-              Quizzes
-            </button>
-            <button
-              className="sidebar-item"
-              onClick={() => (window.location.href = '/student/materials')}
-            >
-              <span className="sidebar-bullet" />
-              Course Materials
-            </button>
-            <button
-              className="sidebar-item"
-              onClick={() => (window.location.href = '/student/community')}
-            >
-              <span className="sidebar-bullet" />
-              Community
-            </button>
-            <button className="sidebar-item sidebar-item-active">
-              <span className="sidebar-bullet" />
-              Boardings
-            </button>
-            <button
-              className="sidebar-item"
-              onClick={() => (window.location.href = '/student/profile/edit')}
-            >
-              <span className="sidebar-bullet" />
-              Profile
-            </button>
-            <button className="sidebar-item" onClick={handleLogout}>
-              <span className="sidebar-bullet" />
-              Logout
-            </button>
-          </nav>
-        </aside>
-
-        <main className="teacher-main">
-          <header className="teacher-topbar">
-            <div>
-              <h1 className="teacher-title">Boardings</h1>
-              <p className="teacher-subtitle">
-                Browse nearby boarding places for <span>{studentName}</span>.
-              </p>
-            </div>
-            <button
-              className="teacher-avatar-btn"
-              onClick={() => (window.location.href = '/student/profile/edit')}
-              title="Edit your profile"
-            >
-              <img
-                src={avatarSrc}
-                alt="Student profile"
-                className="teacher-avatar"
-              />
-            </button>
-          </header>
-        </main>
-      </div>
-
-      <Modal
-        isOpen={modal.isOpen}
-        title={modal.title}
-        message={modal.message}
-        type={modal.type}
-        onClose={closeModal}
-        onConfirm={handleConfirm}
-        confirmText={modal.confirmText}
-        cancelText={modal.cancelText}
-        singleButton={modal.singleButton}
-      />
-    </div>
+    <>
+      <DashboardLayout
+        role="Student"
+        sidebarBrand="UniHub Student"
+        sidebarSub="Boardings"
+        navItems={studentNavItems}
+        activePath="/student/boardings"
+        userName={studentName}
+        userAvatar={avatarSrc}
+        title="Boardings"
+        subtitleText={`Browse nearby boarding places for ${studentName}.`}
+        onLogout={handleLogout}
+      >
+        <div className="glass-card p-6 md:p-10 rounded-2xl w-full text-center mt-10">
+            <div className="w-24 h-24 bg-primary-50 dark:bg-primary-900/40 text-primary-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">🏠</div>
+            <h2 className="text-2xl font-heading font-bold text-slate-900 dark:text-white mb-2">No Boardings Found</h2>
+            <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">There are no approved boarding places listed near the university yet. Please check back later.</p>
+        </div>
+      </DashboardLayout>
+      <Modal {...modal} onClose={closeModal} onConfirm={handleConfirm} />
+    </>
   );
 }
 
 export default StudentBoardings;
-

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import useModal from '../hooks/useModal';
 import Modal from '../components/Modal';
+import DashboardLayout from '../components/DashboardLayout';
+import { teacherNavItems } from '../utils/navConfig';
 import { secureLogout, setupBackButtonProtection, checkAuthAndPreventCaching } from '../utils/auth';
 import { generateQuizQuestions, publishQuiz, getQuizzes, updateQuiz, deleteQuiz } from '../utils/quizApi';
-import '../styles/HomePage.css';
 
 function TeacherPublishQuiz() {
   const { modal, closeModal, handleConfirm, showConfirm } = useModal();
@@ -29,7 +30,6 @@ function TeacherPublishQuiz() {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editForm, setEditForm] = useState(null);
 
-  // Phase 2: Quiz Management state
   const [publishedQuizzes, setPublishedQuizzes] = useState([]);
   const [showPublishedList, setShowPublishedList] = useState(false);
   const [editingQuizId, setEditingQuizId] = useState(null);
@@ -46,13 +46,7 @@ function TeacherPublishQuiz() {
   const avatarSrc = user?.profileImage || '/images/teacher-avatar.jpg';
 
   const handleLogout = () => {
-    showConfirm(
-      'Logout Confirmation',
-      'Are you sure you want to logout? You will be redirected to the login page.',
-      () => {
-        secureLogout();
-      }
-    );
+    showConfirm('Logout', 'Are you sure you want to logout?', () => secureLogout());
   };
 
   const fetchPublishedQuizzes = async () => {
@@ -111,10 +105,7 @@ function TeacherPublishQuiz() {
     setEditForm({ ...generatedQuestions[idx], options: [...(generatedQuestions[idx].options || [])] });
   };
 
-  const handleEditChange = (field, value) => {
-    setEditForm(prev => ({ ...prev, [field]: value }));
-  };
-
+  const handleEditChange = (field, value) => setEditForm(prev => ({ ...prev, [field]: value }));
   const handleOptionChange = (optIdx, value) => {
     const newOptions = [...editForm.options];
     newOptions[optIdx] = value;
@@ -129,13 +120,10 @@ function TeacherPublishQuiz() {
     setEditForm(null);
   };
 
-  const cancelEdit = () => {
-    setEditingIndex(null);
-    setEditForm(null);
-  };
+  const cancelEdit = () => { setEditingIndex(null); setEditForm(null); };
 
   const removeQuestion = (idx) => {
-    showConfirm('Remove Question', 'Are you sure you want to remove this question?', () => {
+    showConfirm('Remove', 'Are you sure you want to remove this question?', () => {
       const updated = generatedQuestions.filter((_, i) => i !== idx);
       setGeneratedQuestions(updated);
       if (editingIndex === idx) cancelEdit();
@@ -143,14 +131,8 @@ function TeacherPublishQuiz() {
   };
 
   const handleGenerate = async () => {
-    if (!aiConfig.modulePdf) {
-      setErrorMsg('Please upload a module PDF first.');
-      return;
-    }
-
-    setErrorMsg('');
-    setIsGenerating(true);
-
+    if (!aiConfig.modulePdf) return setErrorMsg('Please upload a module PDF first.');
+    setErrorMsg(''); setIsGenerating(true);
     try {
       const data = new FormData();
       data.append('modulePdf', aiConfig.modulePdf);
@@ -160,11 +142,8 @@ function TeacherPublishQuiz() {
       data.append('marksPerQuestion', aiConfig.marksPerQuestion);
 
       const response = await generateQuizQuestions(data);
-      if (response && response.questions) {
-        setGeneratedQuestions(response.questions);
-      }
+      if (response && response.questions) setGeneratedQuestions(response.questions);
     } catch (err) {
-      console.error(err);
       setErrorMsg(err.response?.data?.message || 'Failed to generate questions.');
     } finally {
       setIsGenerating(false);
@@ -173,18 +152,10 @@ function TeacherPublishQuiz() {
 
   const handlePublish = async (e) => {
     e.preventDefault();
-    if (generatedQuestions.length === 0) {
-      setErrorMsg('Please generate questions before publishing.');
-      return;
-    }
-    if (!formData.title || !formData.course) {
-      setErrorMsg('Title and Course are required.');
-      return;
-    }
+    if (generatedQuestions.length === 0) return setErrorMsg('Please generate questions before publishing.');
+    if (!formData.title || !formData.course) return setErrorMsg('Title and Course are required.');
 
-    setIsPublishing(true);
-    setErrorMsg('');
-
+    setIsPublishing(true); setErrorMsg('');
     try {
       const quizPayload = {
         title: formData.title,
@@ -203,13 +174,9 @@ function TeacherPublishQuiz() {
         });
       } else {
         await publishQuiz(quizPayload);
-        showConfirm('Success', 'Quiz published successfully!', () => {
-          window.location.href = '/teacher/dashboard';
-        });
+        showConfirm('Success', 'Quiz published successfully!', () => window.location.href = '/teacher/dashboard');
       }
-
     } catch (err) {
-      console.error(err);
       setErrorMsg(editingQuizId ? 'Failed to update quiz.' : 'Failed to publish quiz.');
     } finally {
       setIsPublishing(false);
@@ -217,84 +184,30 @@ function TeacherPublishQuiz() {
   };
 
   return (
-    <div className="home-root teacher-root">
-      <div className="teacher-layout">
-        <aside className="teacher-sidebar">
-          <div className="sidebar-header">
-            <div className="sidebar-brand">Teacher Panel</div>
-            <p className="sidebar-sub">Quizzes</p>
-          </div>
-
-          <nav className="sidebar-nav">
-            <button
-              className="sidebar-item"
-              onClick={() => (window.location.href = '/teacher/dashboard')}
-            >
-              <span className="sidebar-bullet" />
-              Dashboard
-            </button>
-            <button
-              className="sidebar-item"
-              onClick={() => (window.location.href = '/teacher/students')}
-            >
-              <span className="sidebar-bullet" />
-              View Students
-            </button>
-            <button
-              className="sidebar-item"
-              onClick={() => (window.location.href = '/teacher/materials')}
-            >
-              <span className="sidebar-bullet" />
-              Study Materials
-            </button>
-            <button className="sidebar-item sidebar-item-active">
-              <span className="sidebar-bullet" />
-              Publish Quiz
-            </button>
-            <button
-              className="sidebar-item"
-              onClick={() => (window.location.href = '/teacher/profile/edit')}
-            >
-              <span className="sidebar-bullet" />
-              Profile
-            </button>
-            <button className="sidebar-item" onClick={handleLogout}>
-              <span className="sidebar-bullet" />
-              Logout
-            </button>
-          </nav>
-        </aside>
-
-        <main className="teacher-main" style={{ overflowY: 'auto' }}>
-          <header className="teacher-topbar">
-            <div>
-              <h1 className="teacher-title">Publish Quiz</h1>
-              <p className="teacher-subtitle">
-                Create and publish quizzes for <span>{teacherName}</span>.
-              </p>
-            </div>
-            <button
-              className="teacher-avatar-btn"
-              onClick={() => (window.location.href = '/teacher/profile/edit')}
-              title="Edit your profile"
-            >
-              <img
-                src={avatarSrc}
-                alt="Teacher profile"
-                className="teacher-avatar"
-              />
-            </button>
-          </header>
-
-          <div style={{ display: 'flex', gap: '15px', marginTop: '20px', justifyContent: 'center' }}>
+    <>
+      <DashboardLayout
+        role="Teacher"
+        sidebarBrand="UniHub Teacher"
+        sidebarSub="Quizzes"
+        navItems={teacherNavItems}
+        activePath="/teacher/quizzes/publish"
+        userName={teacherName}
+        userAvatar={avatarSrc}
+        title="Publish Quiz"
+        subtitleText={`Create and publish quizzes for ${teacherName}.`}
+        onLogout={handleLogout}
+      >
+        <div className="w-full max-w-5xl mx-auto pb-12">
+          
+          <div className="flex gap-2 overflow-x-auto border-b border-slate-200 dark:border-slate-800 mb-8 pb-px">
             <button 
-              className={`tab-btn ${!showPublishedList ? 'active' : ''}`}
+              className={`px-6 py-3 font-semibold text-sm transition-all whitespace-nowrap border-b-2 ${!showPublishedList ? 'border-primary-500 text-primary-600 bg-primary-50/50 dark:bg-primary-900/20 rounded-tl-xl rounded-tr-xl' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-tl-xl rounded-tr-xl'}`}
               onClick={() => { setShowPublishedList(false); if(editingQuizId) cancelFullEdit(); }}
             >
               {editingQuizId ? 'Editing Quiz' : 'Publish New Quiz'}
             </button>
             <button 
-              className={`tab-btn ${showPublishedList ? 'active' : ''}`}
+              className={`px-6 py-3 font-semibold text-sm transition-all whitespace-nowrap border-b-2 ${showPublishedList ? 'border-primary-500 text-primary-600 bg-primary-50/50 dark:bg-primary-900/20 rounded-tl-xl rounded-tr-xl' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-tl-xl rounded-tr-xl'}`}
               onClick={togglePublishedList}
             >
               Published Quizzes
@@ -302,305 +215,307 @@ function TeacherPublishQuiz() {
           </div>
 
           {showPublishedList ? (
-            <div className="quiz-management-container">
-              <div className="quiz-management-header">
-                <h2>Published Quizzes</h2>
-                <button className="btn-purple-gradient" onClick={() => setShowPublishedList(false)}>+ Publish New</button>
+            <div className="space-y-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-heading font-bold text-slate-900 dark:text-white">Published Quizzes</h2>
+                <button className="btn-primary py-2 px-6 text-sm" onClick={() => setShowPublishedList(false)}>+ Publish New</button>
               </div>
               
-              <div className="quiz-cards-list">
+              <div className="grid grid-cols-1 gap-4">
                 {isFetchingQuizzes ? (
-                  <p>Loading quizzes...</p>
+                  <div className="animate-pulse space-y-4">
+                    {[1, 2, 3].map(i => <div key={i} className="h-24 bg-slate-100 dark:bg-slate-800 rounded-xl" />)}
+                  </div>
                 ) : publishedQuizzes.length > 0 ? (
                   publishedQuizzes.map(quiz => (
-                    <div key={quiz._id} className="quiz-card-item">
-                      <div className="quiz-card-content">
-                        <h3>{quiz.title}</h3>
-                        <p className="quiz-card-meta">
-                          <span>{quiz.course}</span> • 
-                          <span>{quiz.questions?.length || 0} Questions</span> • 
-                          <span>{quiz.dueDate ? `Due: ${new Date(quiz.dueDate).toLocaleDateString()}` : 'No due date'}</span>
+                    <div key={quiz._id} className="bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:shadow-md transition-shadow">
+                      <div>
+                        <h3 className="font-heading font-bold text-lg text-slate-900 dark:text-white mb-1">{quiz.title}</h3>
+                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                          {quiz.course} &bull; {quiz.questions?.length || 0} Questions &bull; {quiz.dueDate ? `Due ${new Date(quiz.dueDate).toLocaleDateString()}` : 'No due date'}
                         </p>
                       </div>
-                      <div className="quiz-card-actions">
-                        <button className="btn-edit-badge" onClick={() => startEditingQuiz(quiz)}>Edit</button>
-                        <button className="btn-delete-badge" onClick={() => handleDeleteQuiz(quiz._id)}>Delete</button>
+                      <div className="flex gap-2">
+                        <button className="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors" onClick={() => startEditingQuiz(quiz)}>Edit</button>
+                        <button className="px-4 py-2 text-sm font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors" onClick={() => handleDeleteQuiz(quiz._id)}>Delete</button>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p>No published quizzes found.</p>
+                  <div className="glass-card p-10 rounded-2xl text-center">
+                    <p className="text-slate-500 dark:text-slate-400">No published quizzes found.</p>
+                  </div>
                 )}
               </div>
             </div>
           ) : (
-            <section className="teacher-panel teacher-quiz-form" style={{ marginTop: '20px' }}>
-              <div className="teacher-panel-head">
-                <h2 style={{ fontSize: '1.4rem', color: '#1e293b' }}>{editingQuizId ? 'Edit Quiz Details' : 'New Quiz Details'}</h2>
+            <div className="bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-3xl p-6 lg:p-10 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-primary-400 to-accent-500" />
+              
+              <div className="flex justify-between items-center mb-8 border-b border-slate-200 dark:border-slate-800 pb-6">
+                <h2 className="text-2xl font-heading font-bold text-slate-900 dark:text-white">
+                  {editingQuizId ? 'Edit Quiz Details' : 'New Quiz Details'}
+                </h2>
                 {editingQuizId && (
-                  <button onClick={cancelFullEdit} className="btn-outline" style={{ padding: '8px 15px', width: 'auto', fontSize: '0.85em', borderRadius: '1rem' }}>Cancel Edit</button>
+                  <button onClick={cancelFullEdit} className="btn-outline py-2 px-4 shadow-sm text-sm">Cancel Edit</button>
                 )}
               </div>
-            {errorMsg && <div style={{ color: 'red', marginBottom: '15px' }}>{errorMsg}</div>}
 
-            <form onSubmit={handlePublish}>
-              <div className="form-group">
-                <label>Quiz Title</label>
-                <input
-                  type="text"
-                  placeholder="e.g. OOP Basics"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                />
-              </div>
+              {errorMsg && <div className="p-4 mb-6 text-sm font-medium text-red-800 bg-red-100 rounded-xl dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800/50">⚠ {errorMsg}</div>}
 
-              <div className="form-group">
-                <label>Course</label>
-                <input
-                  type="text"
-                  placeholder="e.g. ITPM"
-                  value={formData.course}
-                  onChange={(e) => setFormData({ ...formData, course: e.target.value })}
-                  disabled={!!editingQuizId}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Due Date</label>
-                <input
-                  type="date"
-                  value={formData.dueDate}
-                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  rows="3"
-                  placeholder="Short instructions for students"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </div>
-
-              <hr style={{ margin: '20px 0', border: 'none', borderTop: '1px solid #ccc' }} />
-
-              {!editingQuizId && (
-                <>
-                  <div className="teacher-panel-head">
-                    <h2>AI Question Generation Parameters</h2>
+              <form onSubmit={handlePublish} className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Quiz Title</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. OOP Basics"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      required
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all"
+                    />
                   </div>
 
-              <div className="form-group">
-                <label>Upload Module/PDF Reference</label>
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={(e) => setAiConfig({ ...aiConfig, modulePdf: e.target.files[0] })}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
-                <div className="form-group">
-                  <label>Question Type</label>
-                  <select
-                    value={aiConfig.questionType}
-                    onChange={(e) => setAiConfig({ ...aiConfig, questionType: e.target.value })}
-                    style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }}
-                  >
-                    <option value="MCQ">MCQ</option>
-                    <option value="Essay">Essay</option>
-                    <option value="Structured">Structured</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Number of Questions</label>
-                  <input
-                    type="number"
-                    min="1" max="50"
-                    value={aiConfig.numberOfQuestions}
-                    onChange={(e) => setAiConfig({ ...aiConfig, numberOfQuestions: e.target.value })}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Marks Distribution (per Question)</label>
-                  <input
-                    type="number"
-                    min="1" max="100"
-                    value={aiConfig.marksPerQuestion}
-                    onChange={(e) => setAiConfig({ ...aiConfig, marksPerQuestion: e.target.value })}
-                  />
-                </div>
-              </div>
-
-                  <div style={{ margin: '20px 0' }}>
-                    <button
-                      type="button"
-                      onClick={handleGenerate}
-                      className="btn-outline"
-                      disabled={isGenerating}
-                      style={{ width: 'auto', padding: '10px 20px' }}
-                    >
-                      {isGenerating ? 'Generating with AI...' : 'Generate Questions'}
-                    </button>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Course</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. ITPM"
+                      value={formData.course}
+                      onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                      disabled={!!editingQuizId}
+                      required
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all disabled:opacity-50"
+                    />
                   </div>
-                </>
-              )}
 
-              {generatedQuestions.length > 0 && (
-                <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-                  <h3 style={{ marginBottom: '15px' }}>Generated Questions (Preview)</h3>
-                  {generatedQuestions.map((q, idx) => (
-                    <div key={idx} style={{ marginBottom: '15px', paddingBottom: '15px', borderBottom: '1px solid #ddd' }}>
-                      {editingIndex === idx ? (
-                        <div style={{ padding: '15px', background: '#fff', border: '1px solid #0056b3', borderRadius: '5px' }}>
-                          <div className="form-group" style={{ marginBottom: '10px' }}>
-                            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Question Text</label>
-                            <textarea
-                              rows="2"
-                              value={editForm.questionText}
-                              onChange={(e) => handleEditChange('questionText', e.target.value)}
-                              style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
-                            />
-                          </div>
-                          
-                          {editForm.type === 'MCQ' && (
-                            <div style={{ marginBottom: '10px' }}>
-                              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Options</label>
-                              {editForm.options?.map((opt, i) => (
-                                <input
-                                  key={i}
-                                  type="text"
-                                  value={opt}
-                                  onChange={(e) => handleOptionChange(i, e.target.value)}
-                                  placeholder={`Option ${i + 1}`}
-                                  style={{ display: 'block', width: '100%', marginBottom: '5px', padding: '6px', border: '1px solid #ccc', borderRadius: '4px' }}
-                                />
-                              ))}
-                              <div className="form-group" style={{ marginTop: '10px' }}>
-                                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Correct Answer</label>
-                                <select 
-                                  value={editForm.correctAnswer} 
-                                  onChange={(e) => handleEditChange('correctAnswer', e.target.value)}
-                                  style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
-                                >
-                                  {editForm.options?.map((opt, i) => (
-                                    <option key={i} value={opt}>{opt || `Option ${i + 1}`}</option>
-                                  ))}
-                                </select>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Due Date</label>
+                    <input
+                      type="date"
+                      value={formData.dueDate}
+                      onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Description / Instructions</label>
+                    <textarea
+                      rows="3"
+                      placeholder="Short instructions for students..."
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all resize-y"
+                    />
+                  </div>
+                </div>
+
+                {!editingQuizId && (
+                  <div className="p-6 md:p-8 bg-slate-50/50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800 rounded-2xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/10 rounded-bl-full -z-10" />
+                    <h3 className="text-xl font-heading font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">✨ AI Question Generator</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="space-y-2 md:col-span-3">
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Upload Reference PDF</label>
+                        <input
+                          type="file"
+                          accept="application/pdf"
+                          onChange={(e) => setAiConfig({ ...aiConfig, modulePdf: e.target.files[0] })}
+                          className="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-primary-900/30 dark:file:text-primary-400 cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Question Type</label>
+                        <select
+                          value={aiConfig.questionType}
+                          onChange={(e) => setAiConfig({ ...aiConfig, questionType: e.target.value })}
+                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all"
+                        >
+                          <option value="MCQ">MCQ</option>
+                          <option value="Essay">Essay</option>
+                          <option value="Structured">Structured</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Question Count</label>
+                        <input
+                          type="number" min="1" max="50"
+                          value={aiConfig.numberOfQuestions}
+                          onChange={(e) => setAiConfig({ ...aiConfig, numberOfQuestions: e.target.value })}
+                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Marks per Question</label>
+                        <input
+                          type="number" min="1" max="100"
+                          value={aiConfig.marksPerQuestion}
+                          onChange={(e) => setAiConfig({ ...aiConfig, marksPerQuestion: e.target.value })}
+                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-8 text-right">
+                      <button
+                        type="button"
+                        onClick={handleGenerate}
+                        disabled={isGenerating}
+                        className="btn-primary py-3 px-6 shadow-md shadow-primary-500/30"
+                      >
+                        {isGenerating ? 'Generating with AI...' : '✨ Generate Questions'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {generatedQuestions.length > 0 && (
+                  <div className="pt-6 border-t border-slate-200 dark:border-slate-800">
+                    <h3 className="text-xl font-heading font-bold text-slate-900 dark:text-white mb-6">Generated Questions ({generatedQuestions.length})</h3>
+                    
+                    <div className="space-y-4">
+                      {generatedQuestions.map((q, idx) => (
+                        <div key={idx} className="border border-slate-200 dark:border-dark-border rounded-2xl bg-slate-50/30 dark:bg-slate-800/10 overflow-hidden">
+                          {editingIndex === idx ? (
+                            <div className="p-6 bg-white dark:bg-dark-card shadow-lg ring-2 ring-primary-500 rounded-2xl">
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Question Text</label>
+                                  <textarea
+                                    rows="2"
+                                    value={editForm.questionText}
+                                    onChange={(e) => handleEditChange('questionText', e.target.value)}
+                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all"
+                                  />
+                                </div>
+                                
+                                {editForm.type === 'MCQ' && (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="md:col-span-2">
+                                      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Options</label>
+                                      <div className="space-y-2">
+                                      {editForm.options?.map((opt, i) => (
+                                        <input
+                                          key={i}
+                                          type="text"
+                                          value={opt}
+                                          onChange={(e) => handleOptionChange(i, e.target.value)}
+                                          placeholder={`Option ${i + 1}`}
+                                          className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all"
+                                        />
+                                      ))}
+                                      </div>
+                                    </div>
+                                    <div className="md:col-span-2">
+                                      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Correct Answer</label>
+                                      <select 
+                                        value={editForm.correctAnswer} 
+                                        onChange={(e) => handleEditChange('correctAnswer', e.target.value)}
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all"
+                                      >
+                                        {editForm.options?.map((opt, i) => (
+                                          <option key={i} value={opt}>{opt || `Option ${i + 1}`}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {editForm.type !== 'MCQ' && (
+                                  <div>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Grading Criteria / Correct Answer</label>
+                                    <textarea
+                                      rows="2"
+                                      value={editForm.correctAnswer}
+                                      onChange={(e) => handleEditChange('correctAnswer', e.target.value)}
+                                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all"
+                                    />
+                                  </div>
+                                )}
+
+                                <div>
+                                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Marks</label>
+                                  <input
+                                    type="number" min="1" max="100"
+                                    value={editForm.marks}
+                                    onChange={(e) => handleEditChange('marks', parseInt(e.target.value) || 1)}
+                                    className="w-32 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all"
+                                  />
+                                </div>
+                                
+                                <div className="flex gap-3 pt-4">
+                                  <button type="button" onClick={saveEdit} className="btn-primary py-2 px-6 text-sm">Save Changes</button>
+                                  <button type="button" onClick={cancelEdit} className="btn-outline py-2 px-6 text-sm">Cancel</button>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col md:flex-row justify-between items-start p-6 gap-6">
+                              <div className="flex-1">
+                                <p className="text-lg font-medium text-slate-900 dark:text-white mb-4"><span className="text-slate-400 font-bold mr-2">Q{idx + 1}.</span>{q.questionText}</p>
+                                
+                                {q.type === 'MCQ' && q.options && (
+                                  <div className="space-y-2 pl-8">
+                                    {q.options.map((opt, i) => (
+                                      <div key={i} className={`px-4 py-2 rounded-lg border ${opt === q.correctAnswer ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-800 dark:text-green-300 font-bold' : 'bg-white border-slate-200 text-slate-600 dark:bg-dark-card dark:border-slate-800 dark:text-slate-400'}`}>
+                                        {opt} {opt === q.correctAnswer && <span className="ml-2 inline-block px-2 py-0.5 rounded text-xs bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-200 border border-green-200 dark:border-green-700 uppercase tracking-widest">Correct</span>}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                
+                                {q.type !== 'MCQ' && (
+                                  <div className="pl-8 mt-4">
+                                    <p className="text-sm font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider mb-1">Grading Criteria</p>
+                                    <p className="text-slate-700 dark:text-slate-300 bg-green-50/50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/40 p-3 rounded-xl">{q.correctAnswer}</p>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex shrink-0 gap-2 md:flex-col items-center">
+                                <div className="text-primary-600 dark:text-primary-400 font-bold text-center mb-2 px-3 py-1 bg-primary-50 dark:bg-primary-900/30 rounded-lg">{q.marks} Pts</div>
+                                <div className="flex gap-2">
+                                  <button type="button" onClick={() => startEditing(idx)} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 transition-colors">Edit</button>
+                                  <button type="button" onClick={() => removeQuestion(idx)} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 transition-colors">Remove</button>
+                                </div>
                               </div>
                             </div>
                           )}
-                          
-                          {editForm.type !== 'MCQ' && (
-                            <div className="form-group" style={{ marginBottom: '10px' }}>
-                              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Grading Criteria / Correct Answer</label>
-                              <textarea
-                                rows="2"
-                                value={editForm.correctAnswer}
-                                onChange={(e) => handleEditChange('correctAnswer', e.target.value)}
-                                style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
-                              />
-                            </div>
-                          )}
-
-                          <div className="form-group" style={{ marginBottom: '15px' }}>
-                            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' }}>Marks</label>
-                            <input
-                              type="number"
-                              min="1"
-                              max="100"
-                              value={editForm.marks}
-                              onChange={(e) => handleEditChange('marks', parseInt(e.target.value) || 1)}
-                              style={{ width: '100px', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
-                            />
-                          </div>
-                          
-                          <div style={{ display: 'flex', gap: '10px' }}>
-                            <button type="button" onClick={saveEdit} className="btn-primary" style={{ padding: '6px 15px', fontSize: '14px', width: 'auto' }}>Save Changes</button>
-                            <button type="button" onClick={cancelEdit} className="btn-outline" style={{ padding: '6px 15px', fontSize: '14px', width: 'auto' }}>Cancel</button>
-                          </div>
                         </div>
-                      ) : (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <div style={{ flex: 1 }}>
-                            <p><strong>Q{idx + 1}:</strong> {q.questionText}</p>
-                            {q.type === 'MCQ' && q.options && (
-                              <ul style={{ paddingLeft: '20px', margin: '10px 0' }}>
-                                {q.options.map((opt, i) => (
-                                  <li key={i} style={{ color: opt === q.correctAnswer ? 'green' : 'inherit', fontWeight: opt === q.correctAnswer ? 'bold' : 'normal' }}>
-                                    {opt} {opt === q.correctAnswer && '(Correct)'}
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                            {q.type !== 'MCQ' && (
-                              <p style={{ color: 'green', margin: '8px 0' }}><em>Grading Criteria: {q.correctAnswer}</em></p>
-                            )}
-                            <p style={{ fontSize: '0.9em', color: '#666', marginTop: '5px' }}>Marks: {q.marks}</p>
-                          </div>
-                          <div style={{ display: 'flex', gap: '8px', marginLeft: '15px' }}>
-                            <button 
-                              type="button" 
-                              onClick={() => startEditing(idx)} 
-                              style={{ background: '#ffffff', color: '#333', border: '1px solid #ccc', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85em', fontWeight: '500' }}
-                            >
-                              Edit
-                            </button>
-                            <button 
-                              type="button" 
-                              onClick={() => removeQuestion(idx)} 
-                              style={{ background: '#ffebee', color: '#d32f2f', border: '1px solid #ffcdd2', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85em', fontWeight: '500' }}
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-8 border-t border-slate-200 dark:border-slate-800 mt-8">
+                  <button
+                    className="btn-outline py-3 px-8"
+                    type="button"
+                    onClick={editingQuizId ? cancelFullEdit : () => (window.location.href = '/teacher/dashboard')}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="btn-primary py-3 px-10 shadow-lg shadow-primary-500/30 text-lg"
+                    type="submit"
+                    disabled={isPublishing || generatedQuestions.length === 0}
+                  >
+                    {isPublishing ? 'Processing...' : (editingQuizId ? 'Update Quiz' : 'Publish Quiz')}
+                  </button>
                 </div>
-              )}
-
-              <div className="teacher-profile-actions" style={{ marginTop: '20px' }}>
-                <button
-                  className="btn-primary"
-                  type="submit"
-                  disabled={isPublishing || generatedQuestions.length === 0}
-                >
-                  {isPublishing ? 'Processing...' : (editingQuizId ? 'Update Quiz' : 'Publish Quiz')}
-                </button>
-                <button
-                  className="btn-outline"
-                  type="button"
-                  onClick={editingQuizId ? cancelFullEdit : () => (window.location.href = '/teacher/dashboard')}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </section>
+              </form>
+            </div>
           )}
-        </main>
-      </div>
+        </div>
+      </DashboardLayout>
 
-      <Modal
-        isOpen={modal.isOpen}
-        title={modal.title}
-        message={modal.message}
-        type={modal.type}
-        onClose={closeModal}
-        onConfirm={handleConfirm}
-        confirmText={modal.confirmText}
-        cancelText={modal.cancelText}
-        singleButton={modal.singleButton}
-      />
-    </div>
+      <Modal {...modal} onClose={closeModal} onConfirm={handleConfirm} />
+    </>
   );
 }
 

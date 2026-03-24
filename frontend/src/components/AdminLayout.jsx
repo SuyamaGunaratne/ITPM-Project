@@ -1,16 +1,16 @@
 import { useEffect } from 'react';
 import useModal from '../hooks/useModal';
 import Modal from './Modal';
+import DashboardLayout from './DashboardLayout';
 import { secureLogout, setupBackButtonProtection, checkAuthAndPreventCaching } from '../utils/auth';
-import '../styles/HomePage.css';
 
 const navItems = [
-  { label: 'Dashboard', path: '/admin/dashboard' },
-  { label: 'Boarding Owner Requests', path: '/admin/boarding-registrations' },
-  { label: 'Student Management', path: '/admin/students' },
-  { label: 'Teacher Management', path: '/admin/teachers' },
-  { label: 'Boarding Owner Management', path: '/admin/boarding-owners' },
-  { label: 'Community Post Approvals', path: '/admin/post-requests' },
+  { label: 'Dashboard', path: '/admin/dashboard', icon: <span className="text-xl">📊</span> },
+  { label: 'Boarding Owner Requests', path: '/admin/boarding-registrations', icon: <span className="text-xl">📋</span> },
+  { label: 'Student Management', path: '/admin/students', icon: <span className="text-xl">👨‍🎓</span> },
+  { label: 'Teacher Management', path: '/admin/teachers', icon: <span className="text-xl">👨‍🏫</span> },
+  { label: 'Boarding Owner Management', path: '/admin/boarding-owners', icon: <span className="text-xl">🏠</span> },
+  { label: 'Community Post Approvals', path: '/admin/post-requests', icon: <span className="text-xl">💬</span> },
 ];
 
 function AdminLayout({ title, subtitle, activePath, children }) {
@@ -36,55 +36,26 @@ function AdminLayout({ title, subtitle, activePath, children }) {
     );
   };
 
-  const renderNavButton = (item) => {
-    const isActive = activePath === item.path;
-    return (
-      <button
-        key={item.path}
-        className={`sidebar-item${isActive ? ' sidebar-item-active' : ''}`}
-        onClick={() => (window.location.href = item.path)}
-      >
-        <span className="sidebar-bullet" />
-        {item.label}
-      </button>
-    );
-  };
-
   return (
-    <div className="home-root teacher-root">
-      <div className="teacher-layout">
-        <aside className="teacher-sidebar">
-          <div className="sidebar-header">
-            <div className="sidebar-brand">Admin Panel</div>
-            <p className="sidebar-sub">System Management</p>
-          </div>
-          <nav className="sidebar-nav">
-            {navItems.map(renderNavButton)}
-            <button className="sidebar-item" onClick={handleLogout} style={{ color: '#dc3545', marginTop: 'auto' }}>
-              <span className="sidebar-bullet" />
-              Logout
-            </button>
-          </nav>
-        </aside>
-
-        <main className="teacher-main">
-          <header className="teacher-topbar">
-            <div>
-              <h1 className="teacher-title">{title}</h1>
-              {subtitle && (
-                <p className="teacher-subtitle">
-                  {subtitle} <span>{adminName}</span>.
-                </p>
-              )}
-            </div>
-            <button className="teacher-avatar-btn" onClick={handleLogout}>
-              <img src={avatarSrc} alt="Profile" className="teacher-avatar" />
-            </button>
-          </header>
-
+    <>
+      <DashboardLayout
+        role="Administrator"
+        sidebarBrand="UniHub Admin"
+        sidebarSub="System Management"
+        navItems={navItems}
+        activePath={activePath}
+        userName={adminName}
+        userAvatar={avatarSrc}
+        title={title}
+        subtitleText={subtitle ? `${subtitle} ${adminName}` : ''}
+        onLogout={handleLogout}
+      >
+        {/* Render children inside the layout wrapper. If the children use custom classes
+            some might look unstyled, but we'll provide modern base styles or refactor them. */}
+        <div className="w-full h-full bg-white dark:bg-dark-card rounded-2xl shadow-sm border border-slate-200 dark:border-dark-border p-6 lg:p-10 mb-10 overflow-hidden relative">
           {children}
-        </main>
-      </div>
+        </div>
+      </DashboardLayout>
 
       <Modal
         isOpen={modal.isOpen}
@@ -97,7 +68,7 @@ function AdminLayout({ title, subtitle, activePath, children }) {
         cancelText={modal.cancelText}
         singleButton={modal.singleButton}
       />
-    </div>
+    </>
   );
 }
 
