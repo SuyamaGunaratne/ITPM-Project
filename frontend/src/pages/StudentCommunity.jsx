@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import useModal from '../hooks/useModal';
+import useNotification from '../hooks/useNotification';
 import Modal from '../components/Modal';
 import Toast from '../components/Toast';
 import DashboardLayout from '../components/DashboardLayout';
@@ -23,6 +24,10 @@ function StudentCommunity() {
 
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'success' });
   const [deletePostId, setDeletePostId] = useState(null);
+
+  const [editingPost, setEditingPost] = useState(null);
+  const [editForm, setEditForm] = useState({ title: '', content: '' });
+  const { showNotification, NotificationPortal } = useNotification();
 
   const [newPost, setNewPost] = useState({
     title: '',
@@ -155,20 +160,55 @@ function StudentCommunity() {
 
   const isOwner = (post) => post?.author?._id === user?._id;
 
-  const handleEditPost = async (post) => {
-    const newTitle = window.prompt('Edit post title:', post.title);
-    if (newTitle === null) return;
-    const newContent = window.prompt('Edit post content:', post.content);
-    if (newContent === null) return;
-    if (!newTitle.trim() || !newContent.trim()) { setError('Title and content cannot be empty.'); return; }
+  const handleEditPost = (post) => {
+    setError('');
+    setSuccess('');
+    setEditingPost(post);
+    setEditForm({ title: post.title || '', content: post.content || '' });
+  };
+
+  const handleSaveEditedPost = async () => {
+    if (!editingPost) return;
+    const trimmedTitle = editForm.title.trim();
+    const trimmedContent = editForm.content.trim();
+    if (!trimmedTitle || !trimmedContent) {
+      setError('Title and content cannot be empty.');
+      showNotification('error', 'Validation failed', 'Please enter both title and content.');
+      return;
+    }
+
+    setSubmitting(true);
+    setError('');
+    setSuccess('');
+
     try {
-      const response = await fetch(`http://localhost:5000/api/community/posts/${post._id}`, { method: 'PUT', headers: apiHeaders, body: JSON.stringify({ title: newTitle.trim(), content: newContent.trim() }) });
-      const data = await response.json();
+      const response = await fetch(`http://localhost:5000/api/community/posts/${editingPost._id}`, {
+        method: 'PUT',
+        headers: apiHeaders,
+        body: JSON.stringify({ title: trimmedTitle, content: trimmedContent }),
+      });
+      const data = await parseJsonOrText(response);
+
       if (!response.ok) throw new Error(data.message || 'Failed to update post');
-      setSuccess('Post updated successfully. It may require re-approval.');
-      setError('');
-      fetchFeedPosts(); fetchMyPosts();
-    } catch (err) { setError(err.message || 'Unable to update post'); }
+
+      setSuccess(data.message || 'Your concern was updated and submitted for review.');
+      showNotification('success', 'Concern Saved', data.message || 'Updated and ready for verification.');
+      setEditingPost(null);
+      setEditForm({ title: '', content: '' });
+      await fetchFeedPosts();
+      await fetchMyPosts();
+    } catch (err) {
+      setError(err.message || 'Unable to update post');
+      showNotification('error', 'Update failed', err.message || 'Unable to save your concern.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const closeEditModal = () => {
+    setEditingPost(null);
+    setError('');
+    setSuccess('');
   };
 
   const handleDeletePost = (postId) => {
@@ -450,8 +490,38 @@ function StudentCommunity() {
         </div>
       </DashboardLayout>
 
+      {editingPost && (
+        <div className="fixed inset-0 z-[998] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={closeEditModal}>
+          <div className="bg-white dark:bg-dark-card rounded-2xl shadow-2xl w-full max-w-xl p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3">Edit Concern</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Update your concern and save. This will be re-submitted for admin verification.</p>
+            <div className="space-y-4">
+              <input
+                type="text"
+                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white outline-none"
+                value={editForm.title}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
+                placeholder="Concern title"
+              />
+              <textarea
+                className="w-full px-4 py-2 h-28 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white outline-none resize-y"
+                value={editForm.content}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, content: e.target.value }))}
+                placeholder="Concern details"
+              />
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 dark:text-slate-200" onClick={closeEditModal}>Cancel</button>
+              <button className="px-4 py-2 rounded-xl bg-primary-600 text-white hover:bg-primary-700" onClick={handleSaveEditedPost} disabled={submitting}>
+                {submitting ? 'Saving…' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <Modal {...modal} onClose={closeModal} onConfirm={handleConfirm} />
       <Toast {...toast} onClose={() => setToast({ ...toast, isVisible: false })} duration={4000} />
+      <NotificationPortal />
     </>
   );
 }

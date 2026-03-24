@@ -4,6 +4,7 @@ export const studentNavItems = [
   { label: 'Course Materials', path: '/student/materials', icon: <span className="text-xl">📚</span> },
   { label: 'Community', path: '/student/community', icon: <span className="text-xl">💬</span> },
   { label: 'Boardings', path: '/student/boardings', icon: <span className="text-xl">🏠</span> },
+  { label: 'Support', path: '/student/support', icon: <span className="text-xl">🆘</span> },
   { label: 'Profile', path: '/student/profile/edit', icon: <span className="text-xl">⚙️</span> },
 ];
 
@@ -22,6 +23,7 @@ export const adminNavItems = [
   { label: 'Teacher Management', path: '/admin/teachers', icon: <span className="text-xl">👨‍🏫</span> },
   { label: 'Boarding Owner Management', path: '/admin/boarding-owners', icon: <span className="text-xl">🏠</span> },
   { label: 'Community Post Approvals', path: '/admin/post-requests', icon: <span className="text-xl">💬</span> },
+  { label: 'Support Requests', path: '/admin/support-requests', icon: <span className="text-xl">🆘</span> },
 ];
 
 export const boardingOwnerNavItems = [

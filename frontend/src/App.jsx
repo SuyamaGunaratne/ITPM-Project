@@ -10,7 +10,7 @@ import StudentProfileEdit from './pages/StudentProfileEdit';
 import StudentQuizzes from './pages/StudentQuizzes';
 import StudentMaterials from './pages/StudentMaterials';
 import StudentCommunity from './pages/StudentCommunity';
-import StudentBoardings from './pages/StudentBoardings';
+import StudentSupport from './pages/StudentSupport';
 import AdminDashboard from './pages/AdminDashboard';
 import BoardingDashboard from './pages/BoardingDashboard';
 import BoardingOwnerRegistration from './pages/BoardingOwnerRegistration';
@@ -19,6 +19,7 @@ import PostRequests from './pages/AdminPages/PostRequests';
 import StudentManagement from './pages/AdminPages/StudentManagement';
 import TeacherManagement from './pages/AdminPages/TeacherManagement';
 import BoardingOwnerManagement from './pages/AdminPages/BoardingOwnerManagement';
+import AdminSupportRequests from './pages/AdminPages/AdminSupportRequests';
 import GlobalHeader from './components/GlobalHeader';
 import './App.css';
 
@@ -42,12 +43,14 @@ function App() {
     if (path === '/student/materials') return <StudentMaterials />;
     if (path === '/student/community') return <StudentCommunity />;
     if (path === '/student/boardings') return <StudentBoardings />;
+    if (path === '/student/support') return <StudentSupport />;
 
     if (path === '/admin/dashboard') return <AdminDashboard />;
     if (path === '/admin/post-requests') return <PostRequests />;
     if (path === '/admin/students') return <StudentManagement />;
     if (path === '/admin/teachers') return <TeacherManagement />;
     if (path === '/admin/boarding-owners') return <BoardingOwnerManagement />;
+    if (path === '/admin/support-requests') return <AdminSupportRequests />;
     if (path === '/boarding/dashboard') return <BoardingDashboard />;
 
     return <HomePage />;
