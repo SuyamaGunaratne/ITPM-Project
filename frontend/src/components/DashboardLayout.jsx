@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ThemeToggle from './ThemeToggle';
 
 export default function DashboardLayout({
@@ -15,6 +15,86 @@ export default function DashboardLayout({
   children
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
+
+  // Get user from localStorage
+  const stored = window.localStorage.getItem('unihub_user');
+  const user = stored ? JSON.parse(stored) : null;
+  const token = user?.token || null;
+
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!token) return;
+      
+      try {
+        const response = await fetch('http://localhost:5000/api/notifications', {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setNotifications(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+      }
+    };
+
+    fetchNotifications();
+    
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [token]);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const markAsRead = async (notificationId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/notifications/${notificationId}/read`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        setNotifications(prev => 
+          prev.map(n => n._id === notificationId ? { ...n, read: true } : n)
+        );
+      }
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
+  // Close notification dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationDropdownOpen && !event.target.closest('.notification-dropdown')) {
+        setNotificationDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [notificationDropdownOpen]);
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    return date.toLocaleDateString();
+  };
 
   return (
     <div className="flex h-screen w-screen bg-slate-50 dark:bg-dark-bg overflow-hidden text-slate-900 dark:text-slate-100 font-sans">
@@ -99,6 +179,132 @@ export default function DashboardLayout({
           
           <div className="flex items-center gap-4">
             <ThemeToggle />
+            
+            {/* Notification Bell */}
+            <div className="relative notification-dropdown">
+              <button
+                onClick={() => setNotificationDropdownOpen(!notificationDropdownOpen)}
+                className="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 hover:scale-105"
+              >
+                <svg className={`w-6 h-6 transition-transform duration-200 ${notificationDropdownOpen ? 'rotate-12' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM15 7v5h5l-5 5v-5zM4 12h8m0 0v8m0-8V4" />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse shadow-lg">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Dropdown */}
+              {notificationDropdownOpen && (
+                <div className="absolute right-0 mt-3 w-96 bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-2xl shadow-2xl z-50 max-h-96 overflow-hidden animate-in slide-in-from-top-2 fade-in duration-300">
+                  {/* Header with gradient */}
+                  <div className="p-5 bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 border-b border-slate-200 dark:border-dark-border">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-bold text-slate-900 dark:text-white text-lg">Notifications</h3>
+                      {unreadCount > 0 && (
+                        <span className="bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 text-xs px-2 py-1 rounded-full font-medium">
+                          {unreadCount} new
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {notifications.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
+                        <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM15 7v5h5l-5 5v-5zM4 12h8m0 0v8m0-8V4" />
+                        </svg>
+                      </div>
+                      <p className="text-slate-500 dark:text-slate-400 font-medium">No notifications yet</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">We'll notify you when something important happens</p>
+                    </div>
+                  ) : (
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifications.slice(0, 10).map((notification, index) => (
+                        <div
+                          key={notification._id}
+                          className={`p-4 hover:bg-gradient-to-r hover:from-slate-50 hover:to-blue-50 dark:hover:from-slate-800/50 dark:hover:to-blue-900/10 cursor-pointer transition-all duration-200 border-b border-slate-100 dark:border-dark-border last:border-b-0 group ${
+                            !notification.read ? 'bg-gradient-to-r from-blue-50/50 to-indigo-50/30 dark:from-blue-900/20 dark:to-indigo-900/10' : ''
+                          }`}
+                          onClick={() => markAsRead(notification._id)}
+                          style={{ animationDelay: `${index * 50}ms` }}
+                        >
+                          <div className="flex items-start gap-4">
+                            {/* Notification Icon */}
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 group-hover:scale-110 ${
+                              notification.type === 'admin_request' 
+                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
+                                : notification.type === 'boarding_registration_request'
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                                : notification.type === 'post_approved'
+                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+                                : notification.type === 'post_rejected'
+                                ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                                : notification.type === 'support_request'
+                                ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                            }`}>
+                              {notification.type === 'admin_request' && '💬'}
+                              {notification.type === 'boarding_registration_request' && '🏠'}
+                              {notification.type === 'post_approved' && '✅'}
+                              {notification.type === 'post_rejected' && '❌'}
+                              {notification.type === 'support_request' && '🆘'}
+                              {!['admin_request', 'boarding_registration_request', 'post_approved', 'post_rejected', 'support_request'].includes(notification.type) && '🔔'}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="text-sm text-slate-900 dark:text-white font-medium leading-relaxed">
+                                  {notification.message}
+                                </p>
+                                {!notification.read && (
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1 animate-pulse"></div>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center justify-between mt-2">
+                                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                                  {formatDate(notification.createdAt)}
+                                </p>
+                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                  notification.type === 'admin_request' 
+                                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
+                                    : notification.type === 'boarding_registration_request'
+                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                                    : notification.type === 'post_approved'
+                                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                                    : notification.type === 'post_rejected'
+                                    ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                                }`}>
+                                  {notification.type === 'admin_request' && 'Community'}
+                                  {notification.type === 'boarding_registration_request' && 'Registration'}
+                                  {notification.type === 'post_approved' && 'Approved'}
+                                  {notification.type === 'post_rejected' && 'Rejected'}
+                                  {!['admin_request', 'boarding_registration_request', 'post_approved', 'post_rejected'].includes(notification.type) && 'System'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {notifications.length > 10 && (
+                    <div className="p-4 text-center border-t border-slate-200 dark:border-dark-border bg-slate-50/50 dark:bg-slate-800/50">
+                      <button className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium hover:underline transition-colors duration-200">
+                        View all notifications →
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="hidden sm:flex flex-col items-end">
               <span className="text-sm font-semibold text-slate-900 dark:text-white">{userName}</span>
               <span className="text-xs text-slate-500 font-medium">{role}</span>

@@ -1,6 +1,7 @@
 const BoardingOwnerRegistration = require('../models/BoardingOwnerRegistration');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const Notification = require('../models/Notification');
 
 
 // Register new boarding owner (create registration request)
@@ -85,8 +86,22 @@ const registerBoardingOwner = async (req, res) => {
     try {
       await registration.save();
       console.log('✓ Registration saved successfully:', registration._id);
-      console.log('Password after save:', registration.password ? 'EXISTS' : 'MISSING');
-    } catch (saveError) {
+      console.log('Password after save:', registration.password ? 'EXISTS' : 'MISSING');    
+    // Notify admins about new boarding owner registration request
+    try {
+      const admins = await User.find({ role: 'admin' });
+      await Promise.all(admins.map((admin) =>
+        Notification.create({
+          user: admin._id,
+          type: 'boarding_registration_request',
+          boardingRegistration: registration._id,
+          message: `New boarding owner registration request from ${registration.firstName} ${registration.lastName} (${registration.businessName})`,
+        })
+      ));
+      console.log('✓ Admin notifications sent for boarding owner registration');
+    } catch (notifyErr) {
+      console.error('Failed to create admin notifications for boarding registration:', notifyErr);
+    }    } catch (saveError) {
       console.error('❌ Save error occurred:', saveError.message);
       throw saveError; // Re-throw to be caught by outer catch block
     }

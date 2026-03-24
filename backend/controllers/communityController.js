@@ -400,6 +400,21 @@ const updatePost = async (req, res) => {
       post.updatedAt = new Date();
       await post.save();
 
+      // Notify admins that a pending concern has been edited and requires review
+      try {
+        const admins = await User.find({ role: 'admin' });
+        await Promise.all(admins.map((admin) =>
+          Notification.create({
+            user: admin._id,
+            type: 'admin_request',
+            postRequest: post._id,
+            message: `Student concern updated and pending approval: "${post.title}"`,
+          })
+        ));
+      } catch (notifyErr) {
+        console.error('Failed to notify admins about updated pending concern:', notifyErr);
+      }
+
       return res.json({ message: 'Post updated successfully', post });
     }
 
@@ -414,26 +429,14 @@ const updatePost = async (req, res) => {
     post.title = title.trim();
     post.content = content.trim();
 
-    // Edited approved posts go back for re-moderation
+    // Once a student post is approved, future edits are saved directly.
     if (post.status === 'approved') {
-      // Move approved post back to PostRequest for re-review
-      const postRequest = new PostRequest({
-        title: post.title,
-        content: post.content,
-        author: post.author,
-        image: post.image,
-        status: 'pending',
-      });
-
-      await postRequest.save();
-      await StudentPost.deleteOne({ _id: postId });
-
-      return res.json({ 
-        message: 'Post updated and resubmitted for admin approval', 
-        post: postRequest 
-      });
+      post.updatedAt = new Date();
+      await post.save();
+      return res.json({ message: 'Approved post updated successfully', post });
     }
 
+    // For non-approved StudentPost status, maintain same behavior.
     post.updatedAt = new Date();
     await post.save();
 

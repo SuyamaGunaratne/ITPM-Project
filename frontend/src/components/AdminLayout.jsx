@@ -11,6 +11,7 @@ const navItems = [
   { label: 'Teacher Management', path: '/admin/teachers', icon: <span className="text-xl">👨‍🏫</span> },
   { label: 'Boarding Owner Management', path: '/admin/boarding-owners', icon: <span className="text-xl">🏠</span> },
   { label: 'Community Post Approvals', path: '/admin/post-requests', icon: <span className="text-xl">💬</span> },
+  { label: 'Support Requests', path: '/admin/support-requests', icon: <span className="text-xl">🆘</span> },
 ];
 
 function AdminLayout({ title, subtitle, activePath, children }) {
