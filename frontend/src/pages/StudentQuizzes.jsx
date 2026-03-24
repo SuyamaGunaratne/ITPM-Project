@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import useModal from '../hooks/useModal';
 import Modal from '../components/Modal';
+import DashboardLayout from '../components/DashboardLayout';
+import { studentNavItems } from '../utils/navConfig';
 import { secureLogout, setupBackButtonProtection, checkAuthAndPreventCaching } from '../utils/auth';
 import { getQuizzes, getStudentAttempts, submitQuizAttempt } from '../utils/quizApi';
-import '../styles/HomePage.css';
 
 function StudentQuizzes() {
   const { modal, closeModal, handleConfirm, showConfirm } = useModal();
@@ -14,7 +15,12 @@ function StudentQuizzes() {
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [answers, setAnswers] = useState({});
   const [activeResult, setActiveResult] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const stored = window.localStorage.getItem('unihub_user');
+  const user = stored ? JSON.parse(stored) : null;
+  const studentName = user?.fullName || user?.name || 'Student';
+  const avatarSrc = user?.profileImage || '/images/teacher-avatar.jpg';
 
   useEffect(() => {
     checkAuthAndPreventCaching();
@@ -22,14 +28,10 @@ function StudentQuizzes() {
     loadData();
   }, []);
 
-  const stored = window.localStorage.getItem('unihub_user');
-  const user = stored ? JSON.parse(stored) : null;
-  const studentName = user?.fullName || user?.name || 'Student';
-  const avatarSrc = user?.profileImage || '/images/teacher-avatar.jpg';
-
   const loadData = async () => {
     try {
       if (!user) return;
+      setLoading(true);
       const [qz, att] = await Promise.all([
         getQuizzes(),
         getStudentAttempts(user._id)
@@ -38,22 +40,16 @@ function StudentQuizzes() {
       setAttempts(att);
     } catch (err) {
       console.error("Failed to load quizzes", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleLogout = () => {
-    showConfirm(
-      'Logout Confirmation',
-      'Are you sure you want to logout? You will be redirected to the login page.',
-      () => {
-        secureLogout();
-      }
-    );
+    showConfirm('Logout', 'Are you sure you want to logout?', () => secureLogout());
   };
 
-  const hasAttempted = (quizId) => {
-    return attempts.some(a => a.quiz?._id === quizId);
-  };
+  const hasAttempted = (quizId) => attempts.some(a => a.quiz?._id === quizId);
 
   const startQuiz = (quiz) => {
     setActiveQuiz(quiz);
@@ -80,16 +76,8 @@ function StudentQuizzes() {
       async () => {
         setLoading(true);
         try {
-          const formattedAnswers = Object.keys(answers).map(qId => ({
-            questionId: qId,
-            answerText: answers[qId]
-          }));
-
-          const result = await submitQuizAttempt(activeQuiz._id, {
-            studentId: user._id,
-            answers: formattedAnswers
-          });
-
+          const formattedAnswers = Object.keys(answers).map(qId => ({ questionId: qId, answerText: answers[qId] }));
+          const result = await submitQuizAttempt(activeQuiz._id, { studentId: user._id, answers: formattedAnswers });
           await loadData();
           setActiveResult(result.attempt);
           setView('result');
@@ -104,181 +92,168 @@ function StudentQuizzes() {
   };
 
   return (
-    <div className="home-root teacher-root">
-      <div className="teacher-layout">
-        <aside className="teacher-sidebar">
-          <div className="sidebar-header">
-            <div className="sidebar-brand">Student Panel</div>
-            <p className="sidebar-sub">Quizzes</p>
-          </div>
-
-          <nav className="sidebar-nav">
-            <button className="sidebar-item" onClick={() => (window.location.href = '/student/dashboard')}>
-              <span className="sidebar-bullet" /> Dashboard
-            </button>
-            <button className="sidebar-item sidebar-item-active">
-              <span className="sidebar-bullet" /> Quizzes
-            </button>
-            <button className="sidebar-item" onClick={() => (window.location.href = '/student/materials')}>
-              <span className="sidebar-bullet" /> Course Materials
-            </button>
-            <button className="sidebar-item" onClick={() => (window.location.href = '/student/community')}>
-              <span className="sidebar-bullet" /> Community
-            </button>
-            <button className="sidebar-item" onClick={() => (window.location.href = '/student/boardings')}>
-              <span className="sidebar-bullet" /> Boardings
-            </button>
-            <button className="sidebar-item" onClick={() => (window.location.href = '/student/profile/edit')}>
-              <span className="sidebar-bullet" /> Profile
-            </button>
-            <button className="sidebar-item" onClick={handleLogout}>
-              <span className="sidebar-bullet" /> Logout
-            </button>
-          </nav>
-        </aside>
-
-        <main className="teacher-main" style={{ overflowY: 'auto' }}>
-          <header className="teacher-topbar">
-            <div>
-              <h1 className="teacher-title">My Quizzes</h1>
-              <p className="teacher-subtitle">
-                Upcoming quizzes and attempts for <span>{studentName}</span>.
-              </p>
-            </div>
-            <button className="teacher-avatar-btn" onClick={() => window.location.href = '/student/profile/edit'}>
-              <img src={avatarSrc} alt="Student profile" className="teacher-avatar" />
-            </button>
-          </header>
-
-          <section className="teacher-panel" style={{ marginTop: '20px', padding: '20px' }}>
-            {view === 'list' && (
-              <div>
-                <h2>Available Quizzes</h2>
-                {quizzes.length === 0 ? (
-                  <p>No quizzes available right now.</p>
-                ) : (
-                  <div style={{ display: 'grid', gap: '15px', marginTop: '15px' }}>
-                    {quizzes.map(quiz => (
-                      <div key={quiz._id} style={{ border: '1px solid #eee', padding: '15px', borderRadius: '8px', background: '#fafafa' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <h3 style={{ margin: '0 0 5px 0' }}>{quiz.title}</h3>
-                            <p style={{ margin: 0, color: '#666', fontSize: '0.9em' }}>Course: {quiz.course} | Total Marks: {quiz.totalMarks}</p>
-                            <p style={{ margin: '5px 0 0 0', fontSize: '0.9em' }}>{quiz.description}</p>
-                          </div>
-                          <div>
-                            {hasAttempted(quiz._id) ? (
-                              <button className="btn-outline" onClick={() => viewResults(quiz._id)}>View Results</button>
-                            ) : (
-                              <button className="btn-primary" onClick={() => startQuiz(quiz)}>Attempt Quiz</button>
-                            )}
-                          </div>
+    <>
+      <DashboardLayout
+        role="Student"
+        sidebarBrand="UniHub Student"
+        sidebarSub="Quizzes"
+        navItems={studentNavItems}
+        activePath="/student/quizzes"
+        userName={studentName}
+        userAvatar={avatarSrc}
+        title={view === 'attempt' ? activeQuiz?.title : view === 'result' ? 'Quiz Results' : 'My Quizzes'}
+        subtitleText={view === 'attempt' ? activeQuiz?.description : "Upcoming quizzes and attempts"}
+        onLogout={handleLogout}
+      >
+        <div className="w-full">
+          {view === 'list' && (
+            <div className="space-y-6">
+              {loading ? (
+                <div className="animate-pulse space-y-4">
+                  {[1, 2, 3].map(i => <div key={i} className="h-32 bg-slate-100 dark:bg-slate-800 rounded-2xl" />)}
+                </div>
+              ) : quizzes.length === 0 ? (
+                <div className="glass-card p-10 rounded-2xl text-center">
+                  <div className="w-20 h-20 bg-primary-50 dark:bg-primary-900/40 text-primary-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4">📭</div>
+                  <h3 className="text-xl font-heading font-bold text-slate-900 dark:text-white mb-2">No Quizzes Available</h3>
+                  <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">There are no quizzes currently assigned to your enrolled courses.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {quizzes.map(quiz => (
+                    <div key={quiz._id} className="bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-primary-400 to-accent-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                           <div className="p-3 bg-primary-50 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 rounded-xl">📝</div>
+                           <div>
+                             <h3 className="font-heading font-bold text-lg text-slate-900 dark:text-white tracking-tight leading-tight">{quiz.title}</h3>
+                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{quiz.course} &bull; {quiz.totalMarks} Marks</p>
+                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {view === 'attempt' && activeQuiz && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                  <h2>{activeQuiz.title}</h2>
-                  <button className="btn-outline" onClick={() => setView('list')}>Cancel</button>
+                      <p className="text-sm text-slate-600 dark:text-slate-300 mb-6 line-clamp-2">{quiz.description}</p>
+                      
+                      <div className="flex justify-between items-center border-t border-slate-100 dark:border-slate-800 pt-4">
+                        {hasAttempted(quiz._id) ? (
+                          <>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold uppercase tracking-wider">✓ Completed</span>
+                            <button className="text-sm font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors" onClick={() => viewResults(quiz._id)}>View Results</button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{quiz.dueDate ? `Due ${new Date(quiz.dueDate).toLocaleDateString()}` : 'No due date'}</span>
+                            <button className="btn-primary py-2 px-5 text-sm" onClick={() => startQuiz(quiz)}>Attempt Quiz</button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <p style={{ color: '#666', marginBottom: '20px' }}>{activeQuiz.description}</p>
+              )}
+            </div>
+          )}
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {activeQuiz.questions.map((q, idx) => (
-                    <div key={q._id} style={{ border: '1px solid #ddd', padding: '20px', borderRadius: '8px' }}>
-                      <p style={{ fontWeight: 'bold', marginBottom: '15px' }}>
-                        {idx + 1}. {q.questionText} <span style={{ color: '#888', fontWeight: 'normal', fontSize: '0.9em' }}>({q.marks} Marks)</span>
-                      </p>
+          {view === 'attempt' && activeQuiz && (
+            <div className="w-full max-w-4xl mx-auto space-y-6 pb-12">
+              <div className="flex items-center justify-between">
+                <div className="glass-panel px-4 py-2 rounded-full inline-block text-sm font-semibold text-primary-600 dark:text-primary-400 mb-2">Quiz Attempt in Progress</div>
+                <button className="btn-secondary text-sm py-2 px-4 shadow-sm" onClick={() => setView('list')}>Save & Exit</button>
+              </div>
 
+              <div className="space-y-6">
+                {activeQuiz.questions.map((q, idx) => (
+                  <div key={q._id} className="bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-2xl p-6 lg:p-8 shadow-sm">
+                    <div className="flex gap-4 mb-6">
+                      <div className="flex-shrink-0 w-8 h-8 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center font-bold text-slate-700 dark:text-slate-300">{idx + 1}</div>
+                      <div className="flex-1">
+                        <p className="text-lg font-medium text-slate-900 dark:text-white leading-relaxed">{q.questionText}</p>
+                        <p className="text-xs font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider mt-2">{q.marks} Points</p>
+                      </div>
+                    </div>
+
+                    <div className="ml-12">
                       {q.type === 'MCQ' ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div className="space-y-3">
                           {q.options.map((opt, optIdx) => (
-                            <label key={optIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                            <label key={optIdx} className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${answers[q._id] === opt ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-900/20 shadow-sm' : 'border-slate-200 dark:border-slate-700 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                               <input
                                 type="radio"
                                 name={`question-${q._id}`}
                                 value={opt}
                                 checked={answers[q._id] === opt}
                                 onChange={(e) => handleAnswerChange(q._id, e.target.value)}
+                                className="w-5 h-5 text-primary-600 border-slate-300 focus:ring-primary-500"
                               />
-                              {opt}
+                              <span className="text-slate-700 dark:text-slate-300 font-medium select-none">{opt}</span>
                             </label>
                           ))}
                         </div>
                       ) : (
                         <textarea
                           rows="4"
-                          style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all outline-none resize-y"
                           placeholder="Type your answer here..."
                           value={answers[q._id] || ''}
                           onChange={(e) => handleAnswerChange(q._id, e.target.value)}
                         />
                       )}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
+              </div>
 
-                <div style={{ marginTop: '30px', textAlign: 'right' }}>
-                  <button
-                    className="btn-primary"
-                    onClick={submitAttempt}
-                    disabled={loading}
-                  >
-                    {loading ? 'Submitting...' : 'Submit Answers'}
-                  </button>
+              <div className="sticky bottom-4 z-10 w-full glass-panel border border-slate-200 dark:border-white/10 p-4 rounded-2xl flex justify-between items-center shadow-2xl mt-8">
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-400 pl-4">{Object.keys(answers).length} of {activeQuiz.questions.length} Answered</span>
+                <button className="btn-primary text-base py-3 px-8 shadow-lg shadow-primary-500/40" onClick={submitAttempt} disabled={loading}>
+                  {loading ? 'Submitting...' : 'Submit Answers'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {view === 'result' && activeResult && (
+            <div className="w-full max-w-3xl mx-auto space-y-6">
+              <div className="text-center mb-8 pb-8 border-b border-slate-200 dark:border-dark-border">
+                <div className="w-24 h-24 mx-auto bg-green-100 dark:bg-green-900/40 text-green-500 rounded-full flex items-center justify-center text-5xl mb-6">🏆</div>
+                <h2 className="text-3xl font-heading font-bold text-slate-900 dark:text-white mb-2">Quiz Completed!</h2>
+                <p className="text-lg font-medium text-slate-500 dark:text-slate-400 mb-6">You've successfully submitted your answers.</p>
+                <div className="inline-block glass-card border border-green-200 dark:border-green-800/50 p-6 rounded-2xl shadow-sm">
+                  <p className="text-sm font-semibold text-green-600 dark:text-green-500 uppercase tracking-widest mb-1">Final Score</p>
+                  <p className="text-5xl font-heading font-black text-slate-900 dark:text-white">{activeResult.totalMarksObtained} <span className="text-2xl text-slate-400 font-medium">/ {activeResult.quiz?.totalMarks || '?'}</span></p>
                 </div>
               </div>
-            )}
 
-            {view === 'result' && activeResult && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                  <h2>Quiz Results</h2>
-                  <button className="btn-outline" onClick={() => setView('list')}>Back to List</button>
-                </div>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-heading font-bold text-slate-900 dark:text-white">Detailed Review</h3>
+                <button className="btn-secondary py-2 px-4 shadow-sm text-sm" onClick={() => setView('list')}>Return to Quizzes</button>
+              </div>
 
-                <div style={{ background: '#eef9f0', padding: '20px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #c3e6cb' }}>
-                  <h3 style={{ margin: '0 0 10px 0', color: '#155724' }}>Score: {activeResult.totalMarksObtained} / {activeResult.quiz?.totalMarks || '?'}</h3>
-                  <p style={{ margin: 0, color: '#155724' }}>Submitted on: {new Date(activeResult.submittedAt).toLocaleString()}</p>
-                </div>
-
-                <div>
-                  <h3 style={{ marginBottom: '15px' }}>Detailed Feedback</h3>
-                  {activeResult.answers.map((ans, idx) => (
-                    <div key={idx} style={{ border: '1px solid #eee', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
-                      <p><strong>Question {idx + 1}:</strong> {ans.answerText}</p>
-                      <p style={{ color: ans.marksObtained > 0 ? 'green' : 'red', marginTop: '10px' }}>
-                        <strong>Marks:</strong> {ans.marksObtained}
-                        <br />
-                        <strong>Feedback:</strong> {ans.feedback}
-                      </p>
+              <div className="space-y-4 pb-12">
+                {activeResult.answers.map((ans, idx) => {
+                  const isCorrect = ans.marksObtained > 0;
+                  return (
+                    <div key={idx} className={`border rounded-2xl p-6 ${isCorrect ? 'bg-green-50/50 border-green-200 dark:bg-green-900/10 dark:border-green-900/50' : 'bg-red-50/50 border-red-200 dark:bg-red-900/10 dark:border-red-900/50'}`}>
+                      <div className="flex justify-between items-start mb-4 gap-4">
+                        <p className="font-medium text-slate-900 dark:text-slate-100"><span className="text-slate-500 mr-2 font-bold">{idx + 1}.</span> {ans.answerText}</p>
+                        <span className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-bold ${isCorrect ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400'}`}>
+                          {isCorrect ? `+${ans.marksObtained}` : '0'} pts
+                        </span>
+                      </div>
+                      <div className="bg-white/60 dark:bg-dark-card/60 rounded-xl p-4 border border-slate-100 dark:border-white/5 inline-block mt-2">
+                        <p className="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-1">Feedback</p>
+                        <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{ans.feedback || (isCorrect ? 'Correct!' : 'Incorrect.')}</p>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            )}
-          </section>
-        </main>
-      </div>
-
-      <Modal
-        isOpen={modal.isOpen}
-        title={modal.title}
-        message={modal.message}
-        type={modal.type}
-        onClose={closeModal}
-        onConfirm={handleConfirm}
-        confirmText={modal.confirmText}
-        cancelText={modal.cancelText}
-        singleButton={modal.singleButton}
-      />
-    </div>
+            </div>
+          )}
+        </div>
+      </DashboardLayout>
+      <Modal {...modal} onClose={closeModal} onConfirm={handleConfirm} />
+    </>
   );
 }
 

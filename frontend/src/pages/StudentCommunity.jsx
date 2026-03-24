@@ -2,9 +2,9 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import useModal from '../hooks/useModal';
 import Modal from '../components/Modal';
 import Toast from '../components/Toast';
+import DashboardLayout from '../components/DashboardLayout';
+import { studentNavItems } from '../utils/navConfig';
 import { secureLogout, setupBackButtonProtection, checkAuthAndPreventCaching } from '../utils/auth';
-import '../styles/HomePage.css';
-import '../styles/Management.css';
 
 function StudentCommunity() {
   const { modal, closeModal, handleConfirm, showConfirm } = useModal();
@@ -194,322 +194,265 @@ function StudentCommunity() {
     } catch { return iso; }
   };
 
-  /* Helper: get initials from name */
   const getInitials = (name = '') => name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
   return (
-    <div className="home-root teacher-root student-community-root">
-      <div className="teacher-layout">
+    <>
+      <DashboardLayout
+        role="Student"
+        sidebarBrand="UniHub Student"
+        sidebarSub="Community"
+        navItems={studentNavItems}
+        activePath="/student/community"
+        userName={studentName}
+        userAvatar={avatarSrc}
+        title="Student Community"
+        subtitleText={`Discussions and announcements for ${studentName}.`}
+        onLogout={handleLogout}
+      >
+        <div className="w-full">
+          {error && <div className="p-4 mb-6 text-sm font-medium text-red-800 bg-red-100 rounded-xl dark:bg-red-900/30 dark:text-red-400">⚠ {error}</div>}
+          {success && <div className="p-4 mb-6 text-sm font-medium text-green-800 bg-green-100 rounded-xl dark:bg-green-900/30 dark:text-green-400">✓ {success}</div>}
 
-        {/* ── SIDEBAR ── */}
-        <aside className="teacher-sidebar">
-          <div className="sidebar-header">
-            <div className="sidebar-brand">Student Panel</div>
-            <p className="sidebar-sub">Community</p>
-          </div>
-          <nav className="sidebar-nav">
+          <div className="flex gap-2 overflow-x-auto border-b border-slate-200 dark:border-slate-800 mb-8 pb-px">
             {[
-              { label: 'Dashboard',       href: '/student/dashboard' },
-              { label: 'Quizzes',         href: '/student/quizzes' },
-              { label: 'Course Materials',href: '/student/materials' },
-              { label: 'Community',       href: null, active: true },
-              { label: 'Boardings',       href: '/student/boardings' },
-              { label: 'Profile',         href: '/student/profile/edit' },
-            ].map((item) => (
+              { id: 'share', label: '✏ Share a Concern' },
+              { id: 'feed',  label: '🌐 Community Feed' },
+              { id: 'mine',  label: '📌 Your Posts' },
+            ].map((t) => (
               <button
-                key={item.label}
-                className={`sidebar-item${item.active ? ' sidebar-item-active' : ''}`}
-                onClick={() => item.href && (window.location.href = item.href)}
+                key={t.id}
+                type="button"
+                className={`px-6 py-3 font-semibold text-sm transition-all whitespace-nowrap border-b-2 ${activeTab === t.id ? 'border-primary-500 text-primary-600 bg-primary-50/50 dark:bg-primary-900/20 rounded-tl-xl rounded-tr-xl' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-tl-xl rounded-tr-xl'}`}
+                onClick={() => setTab(t.id)}
               >
-                <span className="sidebar-bullet" />
-                {item.label}
+                {t.label}
               </button>
             ))}
-            <button className="sidebar-item" onClick={handleLogout}>
-              <span className="sidebar-bullet" />
-              Logout
-            </button>
-          </nav>
-        </aside>
+          </div>
 
-        {/* ── MAIN ── */}
-        <main className="teacher-main">
-          <header className="teacher-topbar">
-            <div>
-              <h1 className="teacher-title">Student Community</h1>
-              <p className="teacher-subtitle">
-                Discussions and announcements for <span>{studentName}</span>.
-              </p>
+          {activeTab === 'share' && (
+            <div className="bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-2xl p-6 lg:p-8 shadow-sm max-w-3xl mx-auto">
+              <h2 className="text-xl font-heading font-bold text-slate-900 dark:text-white mb-2">Share a Concern</h2>
+              <p className="text-slate-500 dark:text-slate-400 text-sm mb-8">Posts are reviewed by admin before appearing in the community feed.</p>
+              
+              <form onSubmit={handleCreatePost} className="space-y-6">
+                <div>
+                  <label htmlFor="postTitle" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Title</label>
+                  <input
+                    id="postTitle" type="text"
+                    placeholder="Short summary of your concern"
+                    value={newPost.title}
+                    onChange={(e) => setNewPost((prev) => ({ ...prev, title: e.target.value }))}
+                    required
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all outline-none"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="postContent" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Details</label>
+                  <textarea
+                    id="postContent"
+                    placeholder="Describe your question or concern in detail…"
+                    rows={5}
+                    value={newPost.content}
+                    onChange={(e) => setNewPost((prev) => ({ ...prev, content: e.target.value }))}
+                    required
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all outline-none resize-y"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="postImage" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Image (optional)</label>
+                  <input id="postImage" type="file" accept="image/*" onChange={handleImageChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-primary-900/30 dark:file:text-primary-400 cursor-pointer" />
+                  {newPost.imagePreview && (
+                    <div className="mt-4 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 inline-block">
+                      <img src={newPost.imagePreview} alt="Preview" className="max-w-xs h-auto object-cover" />
+                    </div>
+                  )}
+                </div>
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 text-right">
+                  <button type="submit" className="btn-primary py-3 px-6 shadow-lg shadow-primary-500/30" disabled={submitting}>
+                    {submitting ? 'Submitting…' : 'Submit for Approval →'}
+                  </button>
+                </div>
+              </form>
             </div>
-            <button
-              className="teacher-avatar-btn"
-              onClick={() => (window.location.href = '/student/profile/edit')}
-              title="Edit your profile"
-            >
-              <img src={avatarSrc} alt="Student profile" className="teacher-avatar" />
-            </button>
-          </header>
+          )}
 
-          <div className="management-container" style={{ paddingTop: 0, paddingBottom: 40, background: 'transparent' }}>
-            {error   && <div className="error-message">⚠ {error}</div>}
-            {success && <div className="success-message">✓ {success}</div>}
-
-            {/* ── TAB BAR ── */}
-            <div className="tab-bar">
-              {[
-                { id: 'share', label: '✏ Share a Concern' },
-                { id: 'feed',  label: '🌐 Community Feed' },
-                { id: 'mine',  label: '📌 Your Posts' },
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  className={`tab-button${activeTab === t.id ? ' tab-active' : ''}`}
-                  onClick={() => setTab(t.id)}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            {/* ══ TAB: SHARE ══ */}
-            {activeTab === 'share' && (
-              <div className="form-container">
-                <h2>Share a Concern</h2>
-                <p style={{ fontSize: '0.88rem', color: '#6b7280', marginBottom: 20, marginTop: -10 }}>
-                  Posts are reviewed by admin before appearing in the community feed.
-                </p>
-                <form onSubmit={handleCreatePost}>
-                  <div className="form-group">
-                    <label htmlFor="postTitle">Title</label>
-                    <input
-                      id="postTitle" type="text"
-                      placeholder="Short summary of your concern"
-                      value={newPost.title}
-                      onChange={(e) => setNewPost((prev) => ({ ...prev, title: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="postContent">Details</label>
-                    <textarea
-                      id="postContent"
-                      placeholder="Describe your question or concern in detail…"
-                      rows={5}
-                      value={newPost.content}
-                      onChange={(e) => setNewPost((prev) => ({ ...prev, content: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="postImage">Image (optional)</label>
-                    <input id="postImage" type="file" accept="image/*" onChange={handleImageChange} />
-                    {newPost.imagePreview && (
-                      <img
-                        src={newPost.imagePreview}
-                        alt="Preview"
-                        style={{ maxWidth: 240, marginTop: 10, borderRadius: 12, border: '1px solid rgba(99,102,241,0.15)' }}
-                      />
-                    )}
-                  </div>
-                  <div className="form-actions">
-                    <button type="submit" className="btn-primary" disabled={submitting}>
-                      {submitting ? 'Submitting…' : 'Submit for Approval →'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* ══ TAB: FEED ══ */}
-            {activeTab === 'feed' && (
-              <div className="form-container">
-                <h2>Community Feed</h2>
-                {loadingFeed ? (
-                  <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>Loading posts…</p>
-                ) : feedPosts.length === 0 ? (
-                  <p className="no-data">No approved posts yet. Check back later.</p>
-                ) : (
-                  feedPosts.map((post, i) => (
-                    <div
-                      key={post._id}
-                      className="registration-card"
-                      style={{ marginBottom: 20, animationDelay: `${i * 0.06}s` }}
-                    >
-                      {/* Card header */}
-                      <div className="card-header">
-                        <div className="card-header-left">
-                          <h3>{post.title}</h3>
-                          <p className="email">
-                            {post.author?.fullName || 'Unknown'} · {formatDate(post.createdAt)}
-                          </p>
+          {activeTab === 'feed' && (
+            <div className="max-w-4xl mx-auto space-y-6">
+              <h2 className="text-xl font-heading font-bold text-slate-900 dark:text-white mb-2">Community Feed</h2>
+              {loadingFeed ? (
+                <div className="animate-pulse space-y-6">
+                  {[1, 2].map(i => <div key={i} className="h-64 bg-slate-100 dark:bg-slate-800 rounded-2xl" />)}
+                </div>
+              ) : feedPosts.length === 0 ? (
+                <div className="glass-card p-10 rounded-2xl text-center">
+                  <div className="text-4xl mb-4">💬</div>
+                  <h3 className="text-lg font-heading font-bold text-slate-900 dark:text-white">No Approved Posts Yet</h3>
+                  <p className="text-slate-500 text-sm">Check back later or share a concern to start a discussion.</p>
+                </div>
+              ) : (
+                feedPosts.map((post) => (
+                  <div key={post._id} className="bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-2xl shadow-sm overflow-hidden group hover:shadow-md transition-shadow">
+                    <div className="px-6 py-4 bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start gap-4">
+                      <div className="flex gap-3 items-center">
+                        <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold text-sm">
+                          {getInitials(post.author?.fullName)}
                         </div>
-                        <div className="card-header-right">
-                          {isOwner(post) && (
-                            <div className="post-actions">
-                              <button type="button" className="btn-outline btn-sm" onClick={() => handleEditPost(post)}>Edit</button>
-                              <button type="button" className="btn-danger btn-sm" onClick={() => handleDeletePost(post._id)}>Delete</button>
-                            </div>
-                          )}
+                        <div>
+                          <h3 className="font-heading font-bold text-slate-900 dark:text-white leading-tight">{post.title}</h3>
+                          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{post.author?.fullName || 'Unknown'} &bull; {formatDate(post.createdAt)}</p>
                         </div>
                       </div>
-
-                      {/* Card body */}
-                      <div className="card-body" style={{ maxHeight: 'unset' }}>
-                        <p style={{ whiteSpace: 'pre-wrap', marginBottom: 16, fontSize: '0.92rem', color: '#374151', lineHeight: 1.7 }}>
-                          {post.content}
-                        </p>
-
-                        {post.image && (
-                          <div style={{ marginBottom: 16 }}>
-                            <img
-                              src={post.image}
-                              alt="Post attachment"
-                              style={{ width: '100%', maxHeight: 420, objectFit: 'cover', borderRadius: 14, border: '1px solid rgba(99,102,241,0.1)' }}
-                            />
-                          </div>
-                        )}
-
-                        {/* Like & comment row */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
-                          <button
-                            type="button"
-                            className={post.likedByCurrentUser ? 'btn-liked' : 'btn-like'}
-                            onClick={() => handleToggleLike(post._id)}
-                            disabled={actionLoading}
-                          >
-                            {post.likedByCurrentUser ? '♥ Liked' : '♡ Like'} · {post.likesCount || 0}
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-like"
-                            onClick={() => setActiveCommentPostId(activeCommentPostId === post._id ? null : post._id)}
-                          >
-                            💬 {post.comments?.length || 0} {post.comments?.length === 1 ? 'reply' : 'replies'}
-                          </button>
+                      {isOwner(post) && (
+                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button type="button" className="px-3 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors" onClick={() => handleEditPost(post)}>Edit</button>
+                          <button type="button" className="px-3 py-1 text-xs font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 transition-colors" onClick={() => handleDeletePost(post._id)}>Delete</button>
                         </div>
+                      )}
+                    </div>
 
-                        {/* Comment thread */}
-                        {activeCommentPostId === post._id && (
-                          <div className="sc-comment-thread">
-                            {post.comments?.length === 0 ? (
-                              <p style={{ color: '#9ca3af', fontSize: '0.87rem' }}>No replies yet. Be the first!</p>
-                            ) : (
-                              post.comments.map((comment) => (
-                                <div key={comment._id} className="sc-comment">
-                                  <div className="sc-comment-avatar">
-                                    {getInitials(comment.user?.fullName || 'A')}
+                    <div className="p-6">
+                      <p className="text-slate-700 dark:text-slate-300 text-sm mb-6 whitespace-pre-wrap leading-relaxed">
+                        {post.content}
+                      </p>
+
+                      {post.image && (
+                        <div className="mb-6 rounded-xl overflow-hidden border border-slate-100 dark:border-white/5">
+                          <img src={post.image} alt="Post attachment" className="w-full h-auto max-h-[500px] object-cover" />
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2 mb-4">
+                        <button
+                          type="button"
+                          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 ${post.likedByCurrentUser ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'}`}
+                          onClick={() => handleToggleLike(post._id)}
+                          disabled={actionLoading}
+                        >
+                          <span className={post.likedByCurrentUser ? "text-primary-500" : ""}>♥</span>
+                          {post.likesCount || 0}
+                        </button>
+                        <button
+                          type="button"
+                          className="px-4 py-2 rounded-xl text-sm font-semibold transition-colors bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 flex items-center gap-2"
+                          onClick={() => setActiveCommentPostId(activeCommentPostId === post._id ? null : post._id)}
+                        >
+                          <span>💬</span>
+                          {post.comments?.length || 0} {post.comments?.length === 1 ? 'Reply' : 'Replies'}
+                        </button>
+                      </div>
+
+                      {activeCommentPostId === post._id && (
+                        <div className="pt-4 mt-2 border-t border-slate-100 dark:border-slate-800 space-y-4">
+                          {post.comments?.length === 0 ? (
+                            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">No replies yet. Be the first!</p>
+                          ) : (
+                            <div className="space-y-4">
+                              {post.comments.map((comment) => (
+                                <div key={comment._id} className="flex gap-4 p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/50">
+                                  <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                    {getInitials(comment.user?.fullName)}
                                   </div>
-                                  <div className="sc-comment-body">
-                                    <div className="sc-comment-meta">
-                                      <span className="sc-comment-name">{comment.user?.fullName || 'Anonymous'}</span>
-                                      <span className="sc-comment-time">· {formatDate(comment.createdAt)}</span>
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="font-semibold text-sm text-slate-900 dark:text-white">{comment.user?.fullName || 'Anonymous'}</span>
+                                      <span className="text-xs text-slate-500 dark:text-slate-400">&bull; {formatDate(comment.createdAt)}</span>
                                     </div>
-                                    <p className="sc-comment-text">{comment.text}</p>
+                                    <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{comment.text}</p>
                                   </div>
                                 </div>
-                              ))
-                            )}
+                              ))}
+                            </div>
+                          )}
 
-                            <div className="sc-comment-compose">
+                          <div className="flex items-start gap-4 mt-4 pt-4">
+                            <div className="flex-1">
                               <textarea
                                 value={commentInputs[post._id] || ''}
                                 onChange={(e) => handleCommentChange(post._id, e.target.value)}
                                 placeholder="Write a reply…"
                                 rows={2}
+                                className="w-full px-4 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all outline-none resize-y"
                               />
-                              <button
-                                type="button"
-                                className="btn-primary"
-                                style={{ padding: '8px 20px', fontSize: '0.85rem' }}
-                                disabled={actionLoading}
-                                onClick={() => handleAddComment(post._id)}
-                              >
-                                {actionLoading ? 'Posting…' : 'Post Reply'}
-                              </button>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-
-            {/* ══ TAB: MINE ══ */}
-            {activeTab === 'mine' && (
-              <div className="form-container">
-                <h2>Your Posts</h2>
-                {loadingMine ? (
-                  <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>Loading your posts…</p>
-                ) : myPosts.length === 0 ? (
-                  <p className="no-data">You haven't submitted any posts yet. Share a concern to get started.</p>
-                ) : (
-                  myPosts.map((post, i) => (
-                    <div key={post._id} className="registration-card" style={{ marginBottom: 14, animationDelay: `${i * 0.06}s` }}>
-                      <div className="card-header">
-                        <div className="card-header-left">
-                          <h3>{post.title}</h3>
-                          <p className="email">Submitted · {formatDate(post.createdAt)}</p>
-                        </div>
-                        <div className="card-header-right">
-                          <span className={`status-badge status-${post.status}`}>{post.status}</span>
-                          <div className="post-actions">
-                            <button type="button" className="btn-outline btn-sm" onClick={() => handleEditPost(post)}>Edit</button>
-                            <button type="button" className="btn-danger btn-sm" onClick={() => handleDeletePost(post._id)}>Delete</button>
+                            <button
+                              type="button"
+                              className="btn-primary py-2 px-6 whitespace-nowrap text-sm h-[42px]"
+                              disabled={actionLoading}
+                              onClick={() => handleAddComment(post._id)}
+                            >
+                              {actionLoading ? 'Posting…' : 'Post Reply'}
+                            </button>
                           </div>
                         </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {activeTab === 'mine' && (
+            <div className="max-w-4xl mx-auto space-y-6">
+              <h2 className="text-xl font-heading font-bold text-slate-900 dark:text-white mb-2">Your Posts</h2>
+              {loadingMine ? (
+                <div className="animate-pulse space-y-6">
+                  {[1, 2].map(i => <div key={i} className="h-40 bg-slate-100 dark:bg-slate-800 rounded-2xl" />)}
+                </div>
+              ) : myPosts.length === 0 ? (
+                <div className="glass-card p-10 rounded-2xl text-center">
+                  <div className="text-4xl mb-4">📭</div>
+                  <h3 className="text-lg font-heading font-bold text-slate-900 dark:text-white">No Posts Found</h3>
+                  <p className="text-slate-500 text-sm">You haven't submitted any posts yet.</p>
+                </div>
+              ) : (
+                myPosts.map((post) => (
+                  <div key={post._id} className="bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-2xl shadow-sm overflow-hidden group hover:shadow-md transition-shadow">
+                    <div className="px-6 py-4 bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start gap-4">
+                      <div>
+                        <h3 className="font-heading font-bold text-slate-900 dark:text-white leading-tight">{post.title}</h3>
+                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Submitted &bull; {formatDate(post.createdAt)}</p>
                       </div>
-                      <div className="card-body" style={{ maxHeight: 'unset' }}>
-                        <p style={{ whiteSpace: 'pre-wrap', fontSize: '0.92rem', color: '#374151', lineHeight: 1.7 }}>
-                          {post.content}
-                        </p>
-                        {post.image && (
-                          <div style={{ marginTop: 12 }}>
-                            <img
-                              src={post.image}
-                              alt="Post attachment"
-                              style={{ width: '100%', maxHeight: 380, objectFit: 'cover', borderRadius: 14, border: '1px solid rgba(99,102,241,0.1)' }}
-                            />
-                          </div>
-                        )}
-                        {post.status === 'rejected' && post.reviewReason && (
-                          <div className="section rejection" style={{ marginTop: 14 }}>
-                            <h4>Admin Feedback</h4>
-                            <p>{post.reviewReason}</p>
-                          </div>
-                        )}
+                      <div className="flex items-center gap-3">
+                        <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-lg ${post.status === 'approved' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' : post.status === 'rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400'}`}>
+                          {post.status}
+                        </span>
+                        <div className="flex gap-2">
+                          <button type="button" className="px-3 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors" onClick={() => handleEditPost(post)}>Edit</button>
+                          <button type="button" className="px-3 py-1 text-xs font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 transition-colors" onClick={() => handleDeletePost(post._id)}>Delete</button>
+                        </div>
                       </div>
                     </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-        </main>
-      </div>
 
-      <Modal
-        isOpen={modal.isOpen}
-        title={modal.title}
-        message={modal.message}
-        type={modal.type}
-        onClose={closeModal}
-        onConfirm={handleConfirm}
-        confirmText={modal.confirmText}
-        cancelText={modal.cancelText}
-        singleButton={modal.singleButton}
-      />
+                    <div className="p-6">
+                      <p className="text-slate-700 dark:text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">
+                        {post.content}
+                      </p>
+                      {post.image && (
+                        <div className="mt-4 rounded-xl overflow-hidden border border-slate-100 dark:border-white/5">
+                          <img src={post.image} alt="Post attachment" className="w-full h-auto max-h-[300px] object-cover" />
+                        </div>
+                      )}
+                      {post.status === 'rejected' && post.reviewReason && (
+                        <div className="mt-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30">
+                          <p className="text-xs uppercase font-bold text-red-800 dark:text-red-400 mb-1">Admin Feedback</p>
+                          <p className="text-sm font-medium text-red-900 dark:text-red-300">{post.reviewReason}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      </DashboardLayout>
 
-      <Toast
-        isVisible={toast.isVisible}
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast({ ...toast, isVisible: false })}
-        duration={4000}
-      />
-    </div>
+      <Modal {...modal} onClose={closeModal} onConfirm={handleConfirm} />
+      <Toast {...toast} onClose={() => setToast({ ...toast, isVisible: false })} duration={4000} />
+    </>
   );
 }
 

@@ -1,83 +1,72 @@
 import { useEffect } from 'react';
 import useModal from '../hooks/useModal';
 import Modal from '../components/Modal';
-import '../styles/HomePage.css';
+import DashboardLayout from '../components/DashboardLayout';
+import { boardingOwnerNavItems } from '../utils/navConfig';
+import { secureLogout, setupBackButtonProtection, checkAuthAndPreventCaching } from '../utils/auth';
 
 function BoardingDashboard() {
   const { modal, closeModal, handleConfirm, showConfirm } = useModal();
 
   useEffect(() => {
-    // Check if user is logged in
-    const user = window.localStorage.getItem('unihub_user');
-    if (!user) {
-      window.location.href = '/login';
-    }
+    checkAuthAndPreventCaching();
+    setupBackButtonProtection();
   }, []);
 
   const stored = window.localStorage.getItem('unihub_user');
   const user = stored ? JSON.parse(stored) : null;
-  const ownerName = user?.name || 'Boarding Owner';
+  const ownerName = user?.name || user?.fullName || 'Boarding Owner';
   const avatarSrc = user?.profileImage || '/images/teacher-avatar.jpg';
 
   const handleLogout = () => {
-    showConfirm(
-      'Logout Confirmation',
-      'Are you sure you want to logout? You will be redirected to the login page.',
-      () => {
-        // Simple logout - clear localStorage and redirect
-        window.localStorage.removeItem('unihub_user');
-        window.location.href = '/';
-      }
-    );
+    showConfirm('Logout Confirmation', 'Are you sure you want to logout?', () => secureLogout());
   };
 
   return (
-    <div className="home-root teacher-root">
-      <div className="teacher-layout">
-        <aside className="teacher-sidebar">
-          <div className="sidebar-header">
-            <div className="sidebar-brand">Boarding Panel</div>
-            <p className="sidebar-sub">My Properties</p>
+    <>
+      <DashboardLayout
+        role="Boarding Owner"
+        sidebarBrand="UniHub Boarding"
+        sidebarSub="My Properties"
+        navItems={boardingOwnerNavItems}
+        activePath="/boarding/dashboard"
+        userName={ownerName}
+        userAvatar={avatarSrc}
+        title="Boarding Owner Dashboard"
+        subtitleText={`Welcome back, ${ownerName}.`}
+        onLogout={handleLogout}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="glass-card p-6 rounded-2xl border-l-4 border-l-primary-500">
+            <h3 className="text-slate-500 dark:text-slate-400 text-sm font-semibold mb-2">Total Boardings</h3>
+            <p className="text-3xl font-heading font-bold text-slate-900 dark:text-white">0</p>
           </div>
-          <nav className="sidebar-nav">
-            <button className="sidebar-item sidebar-item-active">
-              <span className="sidebar-bullet" />
-              Dashboard
-            </button>
-            <button className="sidebar-item" onClick={handleLogout} style={{ color: '#dc3545', marginTop: 'auto' }}>
-              <span className="sidebar-bullet" />
-              Logout
-            </button>
-          </nav>
-        </aside>
+          <div className="glass-card p-6 rounded-2xl border-l-4 border-l-green-500">
+            <h3 className="text-slate-500 dark:text-slate-400 text-sm font-semibold mb-2">Active Tenants</h3>
+            <p className="text-3xl font-heading font-bold text-slate-900 dark:text-white">0</p>
+          </div>
+          <div className="glass-card p-6 rounded-2xl border-l-4 border-l-yellow-500">
+            <h3 className="text-slate-500 dark:text-slate-400 text-sm font-semibold mb-2">Pending Requests</h3>
+            <p className="text-3xl font-heading font-bold text-slate-900 dark:text-white">0</p>
+          </div>
+        </div>
 
-        <main className="teacher-main">
-          <header className="teacher-topbar">
-            <div>
-              <h1 className="teacher-title">Boarding Owner Dashboard</h1>
-              <p className="teacher-subtitle">
-                Welcome back, <span>{ownerName}</span>.
-              </p>
-            </div>
-            <button className="teacher-avatar-btn" onClick={handleLogout}>
-              <img src={avatarSrc} alt="Profile" className="teacher-avatar" />
-            </button>
-          </header>
-        </main>
-      </div>
-      <Modal
-        isOpen={modal.isOpen}
-        title={modal.title}
-        message={modal.message}
-        onCancel={closeModal}
-        onConfirm={() => {
-          handleConfirm();
-          closeModal();
-        }}
-      />
-    </div>
+        <div className="bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-2xl p-6 lg:p-8 shadow-sm">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-heading font-bold text-slate-900 dark:text-white">My Properties</h2>
+            <button className="btn-primary py-2 px-4 text-sm font-semibold shadow-md shadow-primary-500/20">Add Property</button>
+          </div>
+          <div className="text-center py-10">
+            <div className="text-5xl mb-4">🏠</div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">No properties yet</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">Add your first boarding property to start receiving requests.</p>
+          </div>
+        </div>
+      </DashboardLayout>
+
+      <Modal {...modal} onClose={closeModal} onConfirm={handleConfirm} />
+    </>
   );
 }
 
 export default BoardingDashboard;
-

@@ -1,97 +1,7 @@
-import { useState, useCallback, useRef } from 'react';
-import '../styles/HomePage.css';
-import '../styles/Notifications.css';
+import { useState } from 'react';
+import useNotification from '../hooks/useNotification';
+import AuthLayout from '../components/AuthLayout';
 
-/* ─────────────────────────────────────────────
-   Inline notification hook — no separate file
-   ───────────────────────────────────────────── */
-const ICONS = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
-
-function useNotification() {
-  const [toasts, setToasts] = useState([]);
-  const timers = useRef({});
-
-  const dismiss = useCallback((id) => {
-    clearTimeout(timers.current[id]);
-    setToasts((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, out: true } : t))
-    );
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 420);
-  }, []);
-
-  const showNotification = useCallback(
-    (type = 'info', title = '', message = '') => {
-      const id = Date.now() + Math.random();
-      setToasts((prev) => [{ id, type, title, message, out: false }, ...prev]);
-      timers.current[id] = setTimeout(() => dismiss(id), 3200);
-      return id;
-    },
-    [dismiss]
-  );
-
-  const pauseTimer = useCallback((id) => {
-    clearTimeout(timers.current[id]);
-  }, []);
-
-  const resumeTimer = useCallback(
-    (id) => {
-      timers.current[id] = setTimeout(() => dismiss(id), 1800);
-    },
-    [dismiss]
-  );
-
-  const NotificationPortal = useCallback(
-    () => (
-      <div id="toast-stack" aria-live="polite">
-        {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            role="alert"
-            className={[
-              'login-popup',
-              `login-popup-${toast.type}`,
-              toast.out ? 'popup-out' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            onClick={() => dismiss(toast.id)}
-            onMouseEnter={() => pauseTimer(toast.id)}
-            onMouseLeave={() => resumeTimer(toast.id)}
-          >
-            <span className="login-popup-icon" aria-hidden="true">
-              {ICONS[toast.type]}
-            </span>
-            <div className="login-popup-body">
-              {toast.title && (
-                <div className="login-popup-title">{toast.title}</div>
-              )}
-              {toast.message && (
-                <div className="login-popup-msg">{toast.message}</div>
-              )}
-            </div>
-            <button
-              className="login-popup-close"
-              aria-label="Dismiss"
-              onClick={(e) => {
-                e.stopPropagation();
-                dismiss(toast.id);
-              }}
-            >
-              ✕
-            </button>
-          </div>
-        ))}
-      </div>
-    ),
-    [toasts, dismiss, pauseTimer, resumeTimer]
-  );
-
-  return { showNotification, NotificationPortal };
-}
-
-/* ─────────────────────────────────────────────
-   LoginPage
-   ───────────────────────────────────────────── */
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -140,73 +50,68 @@ function LoginPage() {
   };
 
   return (
-    <div className="home-root login-root">
+    <>
+      <AuthLayout 
+        title="Welcome Back!" 
+        subtitle="Sign in to your UniHub LMS account to continue your learning journey."
+      >
+        <div className="mb-10">
+          <h1 className="text-3xl font-heading font-bold text-slate-900 dark:text-white mb-2">Sign in</h1>
+          <p className="text-slate-500 dark:text-slate-400">Enter your credentials to access your dashboard.</p>
+        </div>
 
-      <main className="login-main">
-        <section className="login-card">
-          <div className="login-header">
-            <h1>Login</h1>
-            <p>Sign in to access your UniHub dashboard based on your role.</p>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Email Address</label>
+            <input
+              id="email"
+              type="email"
+              placeholder="you@university.lk"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all outline-none"
+            />
           </div>
 
-          <form className="login-form" onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input
-                id="email"
-                type="email"
-                placeholder="you@university.lk"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
+          <div className="space-y-2">
+            <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
+            <input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all outline-none"
+            />
+          </div>
 
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <input type="checkbox" id="remember" className="rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
+              <label htmlFor="remember" className="text-slate-600 dark:text-slate-400">Remember me</label>
             </div>
+            <a href="#forgot" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">Forgot password?</a>
+          </div>
 
-            <div className="login-actions">
-              <button
-                type="submit"
-                className="btn-primary login-submit"
-                disabled={loading}
-              >
-                {loading ? 'Signing in…' : 'Sign In'}
-              </button>
-            </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full btn-primary py-3.5 text-lg"
+          >
+            {loading ? 'Signing in…' : 'Sign In'}
+          </button>
+        </form>
 
-            <div className="login-meta">
-              <a href="#forgot" className="login-link">Forgot your password?</a>
-              <span className="divider-dot">•</span>
-              <a href="#help" className="login-link">Need help?</a>
-            </div>
-          </form>
-        </section>
-      </main>
+        <p className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
+          Don't have an account? <a href="/boarding/register" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">Register here</a>
+        </p>
+      </AuthLayout>
 
-      {/* Toast notifications render here, fixed top-right */}
       <NotificationPortal />
-
-      <footer className="footer">
-        <div>© {new Date().getFullYear()} UniHub LMS. All rights reserved.</div>
-        <div className="footer-links">
-          <a href="#about">About</a>
-          <a href="#contact">Contact</a>
-          <a href="#privacy">Privacy</a>
-        </div>
-      </footer>
-    </div>
+    </>
   );
 }
 
 export default LoginPage;
-

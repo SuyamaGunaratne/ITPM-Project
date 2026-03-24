@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import '../styles/RegistrationForm.css';
+import AuthLayout from '../components/AuthLayout';
 
 function BoardingOwnerRegistration() {
   const [step, setStep] = useState(1);
@@ -39,18 +39,11 @@ function BoardingOwnerRegistration() {
   });
 
   const amenitiesList = [
-    'WiFi',
-    'Electricity',
-    'Water',
-    'Security',
-    'Air Conditioning',
-    'Supplies',
-    'Laundry Service',
-    'Food Facility',
-    'Parking'
+    'WiFi', 'Electricity', 'Water', 'Security',
+    'Air Conditioning', 'Supplies', 'Laundry Service',
+    'Food Facility', 'Parking'
   ];
 
-  // Compress image to reduce size
   const compressImage = (base64String, quality = 0.7) => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -67,39 +60,23 @@ function BoardingOwnerRegistration() {
     });
   };
 
-  // Handle personal details input
   const handlePersonalChange = (e) => {
     const { name, value } = e.target;
-    setPersonalData({
-      ...personalData,
-      [name]: value
-    });
+    setPersonalData({ ...personalData, [name]: value });
   };
 
-  // Handle image upload with compression
   const handleImageUpload = async (e) => {
     const { name, files } = e.target;
     const file = files[0];
-
     if (file) {
       const reader = new FileReader();
       reader.onloadend = async () => {
         try {
-          // Compress the image
           const compressed = await compressImage(reader.result, 0.6);
-          
           if (name === 'idFrontImage') {
-            setPersonalData({
-              ...personalData,
-              idFrontImage: compressed,
-              idFrontPreview: compressed
-            });
+            setPersonalData({ ...personalData, idFrontImage: compressed, idFrontPreview: compressed });
           } else if (name === 'idBackImage') {
-            setPersonalData({
-              ...personalData,
-              idBackImage: compressed,
-              idBackPreview: compressed
-            });
+            setPersonalData({ ...personalData, idBackImage: compressed, idBackPreview: compressed });
           }
         } catch (err) {
           setError('Error processing image. Please try again.');
@@ -109,121 +86,67 @@ function BoardingOwnerRegistration() {
     }
   };
 
-  // Handle click on image upload area
   const handleImageAreaClick = (inputRef) => {
-    if (inputRef.current) {
-      inputRef.current.click();
-    }
+    if (inputRef.current) inputRef.current.click();
   };
 
-  // Handle business details input
   const handleBusinessChange = (e) => {
     const { name, value } = e.target;
-    setBusinessData({
-      ...businessData,
-      [name]: value
-    });
+    setBusinessData({ ...businessData, [name]: value });
   };
 
-  // Handle amenities selection
   const handleAmenityToggle = (amenity) => {
     const updated = businessData.amenities.includes(amenity)
       ? businessData.amenities.filter((a) => a !== amenity)
       : [...businessData.amenities, amenity];
-    setBusinessData({
-      ...businessData,
-      amenities: updated
-    });
+    setBusinessData({ ...businessData, amenities: updated });
   };
 
-  // Validate personal details
   const validatePersonalDetails = () => {
-    if (!personalData.firstName.trim()) {
-      setError('First name is required');
-      return false;
-    }
-    if (!personalData.lastName.trim()) {
-      setError('Last name is required');
-      return false;
-    }
-    if (!personalData.email.trim()) {
-      setError('Email is required');
+    if (!personalData.firstName.trim() || !personalData.lastName.trim() || !personalData.email.trim() || !personalData.idNumber.trim() || !personalData.password.trim()) {
+      setError('Please fill all required text fields.');
       return false;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(personalData.email)) {
-      setError('Please enter a valid email');
-      return false;
-    }
-    if (!personalData.idNumber.trim()) {
-      setError('ID number is required');
-      return false;
-    }
-    if (!personalData.password.trim()) {
-      setError('Password is required');
+      setError('Please enter a valid email.');
       return false;
     }
     if (personalData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError('Password must be at least 6 characters.');
       return false;
     }
     if (personalData.password !== personalData.confirmPassword) {
-      setError('Passwords do not match');
+      setError('Passwords do not match.');
       return false;
     }
-    if (!personalData.idFrontImage) {
-      setError('ID front image is required');
-      return false;
-    }
-    if (!personalData.idBackImage) {
-      setError('ID back image is required');
+    if (!personalData.idFrontImage || !personalData.idBackImage) {
+      setError('Both front and back ID images are required.');
       return false;
     }
     return true;
   };
 
-  // Validate business details
   const validateBusinessDetails = () => {
-    if (!businessData.businessName.trim()) {
-      setError('Business name is required');
-      return false;
-    }
-    if (!businessData.address.trim()) {
-      setError('Address is required');
-      return false;
-    }
-    if (!businessData.city.trim()) {
-      setError('City is required');
-      return false;
-    }
-    if (!businessData.district.trim()) {
-      setError('District is required');
+    if (!businessData.businessName.trim() || !businessData.address.trim() || !businessData.city.trim() || !businessData.district.trim()) {
+      setError('Please fill all required business fields.');
       return false;
     }
     return true;
   };
 
-  // Go to step 2
   const handleNextStep = () => {
     setError('');
-    if (validatePersonalDetails()) {
-      setStep(2);
-    }
+    if (validatePersonalDetails()) setStep(2);
   };
 
-  // Submit registration
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccessMessage('');
-
-    if (!validateBusinessDetails()) {
-      return;
-    }
+    if (!validateBusinessDetails()) return;
 
     try {
       setLoading(true);
-
-      // Create clean registration data without preview fields and confirmPassword
       const registrationData = {
         firstName: personalData.firstName,
         lastName: personalData.lastName,
@@ -242,363 +165,215 @@ function BoardingOwnerRegistration() {
         amenities: businessData.amenities
       };
 
-      // Log the data being sent (for debugging)
-      console.log('Sending registration data with fields:', Object.keys(registrationData));
-      console.log('Image size (front):', registrationData.idFrontImage?.length || 0, 'bytes');
-      console.log('Image size (back):', registrationData.idBackImage?.length || 0, 'bytes');
-      console.log('Total payload size:', JSON.stringify(registrationData).length, 'bytes');
-
       const response = await fetch('http://localhost:5000/api/registration/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(registrationData)
       });
 
-      console.log('Response status:', response.status);
       const data = await response.json();
-      console.log('Response data:', data);
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
+      if (!response.ok) throw new Error(data.message || 'Registration failed');
 
       setSuccessMessage(data.message);
       setRegistrationId(data.registrationId);
-
-      // Popup will handle navigation, no need for timeout
     } catch (err) {
-      console.error('Registration error:', err);
       setError(err.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="registration-container">
-      {/* Success Popup Modal */}
-      {successMessage && (
-        <div className="success-overlay">
-          <div className="success-popup">
-            <div className="success-icon">✓</div>
-            <h2>Application Submitted Successfully!</h2>
-            <p className="success-message">{successMessage}</p>
-            <div className="success-details">
-              <div className="detail-row">
-                <label>Registration ID:</label>
-                <span className="registration-id">{registrationId}</span>
-              </div>
-              <p className="success-note">
-                We will review your application and notify you via email. This usually takes 2-3 business days.
-              </p>
-            </div>
-            <button
-              className="btn-close-popup"
-              onClick={() => {
-                setSuccessMessage('');
-                setRegistrationId('');
-                window.location.href = '/';
-              }}
-            >
-              Return to Home
-            </button>
+  if (successMessage) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-dark-bg flex items-center justify-center p-4 font-sans">
+        <div className="glass-panel max-w-md w-full p-8 text-center bg-white dark:bg-dark-card rounded-3xl shadow-2xl">
+          <div className="w-20 h-20 bg-green-100 dark:bg-green-900/50 text-green-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">
+            ✓
           </div>
+          <h2 className="text-2xl font-heading font-bold text-slate-900 dark:text-white mb-4">Application Submitted!</h2>
+          <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">{successMessage}</p>
+          <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl mb-8">
+            <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Registration ID</p>
+            <p className="text-lg font-mono font-bold text-primary-600 dark:text-primary-400">{registrationId}</p>
+          </div>
+          <p className="text-sm text-slate-500 mb-8">We will review your application and notify you via email in 2-3 business days.</p>
+          <a href="/" className="btn-primary block w-full py-3">Return to Home</a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <AuthLayout 
+      title="Partner with UniHub" 
+      subtitle="Join our network of verified boarding owners and start reaching thousands of students looking for verified accommodations."
+      contentMaxWidth="max-w-sm"
+    >
+      <div className="mb-6">
+        <h1 className="text-2xl font-heading font-bold text-slate-900 dark:text-white mb-1">Registration</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Complete the form below to submit your property.</p>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-xl mb-4 text-sm font-medium border border-red-200 dark:border-red-800/50 flex gap-3">
+          <span>⚠</span> {error}
         </div>
       )}
 
-      <div className="registration-card">
-        <div className="registration-card-header">
-          <h1>Boarding Owner Registration</h1>
-          <button
-            className="btn-back-home"
-            onClick={() => (window.location.href = '/')}
-            title="Back to Home"
-          >
-            ← Home
-          </button>
+      {/* Steps Indicator */}
+      <div className="flex items-center justify-center w-full mb-6">
+        <div className={`flex flex-col items-center flex-1 ${step >= 1 ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400'}`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mb-1 transition-colors ${step >= 1 ? 'bg-primary-100 dark:bg-primary-900/50' : 'bg-slate-100 dark:bg-slate-800'}`}>1</div>
+          <span className="text-xs font-semibold uppercase tracking-wider hidden sm:block">Personal</span>
         </div>
-
-        {/* Error Message */}
-        {error && <div className="error-message">{error}</div>}
-
-        {/* Step Indicator */}
-        <div className="step-indicator">
-          <div className={`step ${step === 1 ? 'active' : step > 1 ? 'completed' : ''}`}>
-            <span>1</span>
-            <p>Personal Details</p>
-          </div>
-          <div className="step-line" />
-          <div className={`step ${step === 2 ? 'active' : ''}`}>
-            <span>2</span>
-            <p>Business Details</p>
-          </div>
+        <div className={`w-12 h-1 mx-2 rounded-full ${step >= 2 ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
+        <div className={`flex flex-col items-center flex-1 ${step >= 2 ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400'}`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mb-1 transition-colors ${step >= 2 ? 'bg-primary-100 dark:bg-primary-900/50' : 'bg-slate-100 dark:bg-slate-800'}`}>2</div>
+          <span className="text-xs font-semibold uppercase tracking-wider hidden sm:block">Business</span>
         </div>
+      </div>
 
-        {/* Step 1: Personal Details */}
+      <div className="custom-scrollbar overflow-y-auto max-h-[45vh] pr-2 pb-2 -mr-2">
         {step === 1 && (
-          <form className="registration-form">
-            <h2>Step 1: Personal Details</h2>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>First Name *</label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={personalData.firstName}
-                  onChange={handlePersonalChange}
-                  placeholder="Enter your first name"
-                  required
-                />
+          <form className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">First Name *</label>
+                <input type="text" name="firstName" value={personalData.firstName} onChange={handlePersonalChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white outline-none" placeholder="John" />
               </div>
-              <div className="form-group">
-                <label>Last Name *</label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={personalData.lastName}
-                  onChange={handlePersonalChange}
-                  placeholder="Enter your last name"
-                  required
-                />
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Last Name *</label>
+                <input type="text" name="lastName" value={personalData.lastName} onChange={handlePersonalChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white outline-none" placeholder="Doe" />
               </div>
             </div>
 
-            <div className="form-group">
-              <label>Email Address *</label>
-              <input
-                type="email"
-                name="email"
-                value={personalData.email}
-                onChange={handlePersonalChange}
-                placeholder="Enter your email"
-                required
-              />
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Email Address *</label>
+              <input type="email" name="email" value={personalData.email} onChange={handlePersonalChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white outline-none" placeholder="john@example.com" />
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label>Password *</label>
-                <input
-                  type="password"
-                  name="password"
-                  value={personalData.password}
-                  onChange={handlePersonalChange}
-                  placeholder="Enter a password (min 6 characters)"
-                  required
-                />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Password *</label>
+                <input type="password" name="password" value={personalData.password} onChange={handlePersonalChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white outline-none" placeholder="Min 6 chars" />
               </div>
-              <div className="form-group">
-                <label>Confirm Password *</label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={personalData.confirmPassword}
-                  onChange={handlePersonalChange}
-                  placeholder="Confirm your password"
-                  required
-                />
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Confirm *</label>
+                <input type="password" name="confirmPassword" value={personalData.confirmPassword} onChange={handlePersonalChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white outline-none" placeholder="Confirm" />
               </div>
             </div>
 
-            <div className="form-group">
-              <label>ID Number (CNIC/Passport) *</label>
-              <input
-                type="text"
-                name="idNumber"
-                value={personalData.idNumber}
-                onChange={handlePersonalChange}
-                placeholder="Enter your ID number"
-                required
-              />
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">ID/NIC Number *</label>
+              <input type="text" name="idNumber" value={personalData.idNumber} onChange={handlePersonalChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white outline-none" placeholder="123456789VX" />
             </div>
 
-            <div className="image-section">
-              <h3>Upload ID Documents</h3>
-
-              <div className="form-row">
-                <div className="form-group image-upload">
-                  <label>ID Front Image *</label>
-                  <div
-                    className="image-upload-area"
-                    onClick={() => handleImageAreaClick(frontImageRef)}
-                  >
-                    {personalData.idFrontPreview && (
-                      <img src={personalData.idFrontPreview} alt="ID Front Preview" />
-                    )}
-                    <input
-                      ref={frontImageRef}
-                      type="file"
-                      accept="image/*"
-                      name="idFrontImage"
-                      onChange={handleImageUpload}
-                      required
-                    />
-                    <p>{personalData.idFrontImage ? '✓ Image uploaded' : 'Click to upload front image'}</p>
-                  </div>
+            <div className="space-y-3 pt-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-dark-border pb-2 block">Identity Verification Documents *</label>
+              <div className="grid grid-cols-2 gap-4">
+                <div 
+                  className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors h-32 relative overflow-hidden group"
+                  onClick={() => handleImageAreaClick(frontImageRef)}
+                >
+                  {personalData.idFrontPreview ? (
+                    <img src={personalData.idFrontPreview} alt="Front ID" className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-50 transition-opacity" />
+                  ) : (
+                    <>
+                      <span className="text-2xl mb-1 text-slate-400">📄</span>
+                      <span className="text-xs text-slate-500 font-medium">Front Image</span>
+                    </>
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs font-bold">Change</div>
+                  <input ref={frontImageRef} type="file" accept="image/*" name="idFrontImage" onChange={handleImageUpload} className="hidden" />
                 </div>
-
-                <div className="form-group image-upload">
-                  <label>ID Back Image *</label>
-                  <div
-                    className="image-upload-area"
-                    onClick={() => handleImageAreaClick(backImageRef)}
-                  >
-                    {personalData.idBackPreview && (
-                      <img src={personalData.idBackPreview} alt="ID Back Preview" />
-                    )}
-                    <input
-                      ref={backImageRef}
-                      type="file"
-                      accept="image/*"
-                      name="idBackImage"
-                      onChange={handleImageUpload}
-                      required
-                    />
-                    <p>{personalData.idBackImage ? '✓ Image uploaded' : 'Click to upload back image'}</p>
-                  </div>
+                <div 
+                  className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors h-32 relative overflow-hidden group"
+                  onClick={() => handleImageAreaClick(backImageRef)}
+                >
+                  {personalData.idBackPreview ? (
+                    <img src={personalData.idBackPreview} alt="Back ID" className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-50 transition-opacity" />
+                  ) : (
+                    <>
+                      <span className="text-2xl mb-1 text-slate-400">📄</span>
+                      <span className="text-xs text-slate-500 font-medium">Back Image</span>
+                    </>
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs font-bold">Change</div>
+                  <input ref={backImageRef} type="file" accept="image/*" name="idBackImage" onChange={handleImageUpload} className="hidden" />
                 </div>
               </div>
             </div>
-
-            <div className="form-actions">
-              <button
-                type="button"
-                className="btn-next"
-                onClick={handleNextStep}
-              >
-                Next: Business Details →
+            
+            <div className="pt-2">
+              <button type="button" onClick={handleNextStep} className="w-full btn-primary py-3">
+                Continue to Business Details
               </button>
             </div>
           </form>
         )}
 
-        {/* Step 2: Business Details */}
         {step === 2 && (
-          <form className="registration-form" onSubmit={handleSubmit}>
-            <h2>Step 2: Business Details</h2>
-
-            <div className="form-group">
-              <label>Business/Property Name *</label>
-              <input
-                type="text"
-                name="businessName"
-                value={businessData.businessName}
-                onChange={handleBusinessChange}
-                placeholder="Enter business name"
-                required
-              />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Property/Business Name *</label>
+              <input type="text" name="businessName" value={businessData.businessName} onChange={handleBusinessChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white outline-none" placeholder="Sunrise Boarding" />
             </div>
 
-            <div className="form-group">
-              <label>Address *</label>
-              <input
-                type="text"
-                name="address"
-                value={businessData.address}
-                onChange={handleBusinessChange}
-                placeholder="Enter full address"
-                required
-              />
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Full Address *</label>
+              <input type="text" name="address" value={businessData.address} onChange={handleBusinessChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white outline-none" placeholder="123 Main St" />
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label>City *</label>
-                <input
-                  type="text"
-                  name="city"
-                  value={businessData.city}
-                  onChange={handleBusinessChange}
-                  placeholder="Enter city"
-                  required
-                />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">City *</label>
+                <input type="text" name="city" value={businessData.city} onChange={handleBusinessChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white outline-none" placeholder="Colombo" />
               </div>
-              <div className="form-group">
-                <label>District *</label>
-                <input
-                  type="text"
-                  name="district"
-                  value={businessData.district}
-                  onChange={handleBusinessChange}
-                  placeholder="Enter district"
-                  required
-                />
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">District *</label>
+                <input type="text" name="district" value={businessData.district} onChange={handleBusinessChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white outline-none" placeholder="Colombo" />
               </div>
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label>Monthly Rent (PKR)</label>
-                <input
-                  type="number"
-                  name="monthlyRent"
-                  value={businessData.monthlyRent}
-                  onChange={handleBusinessChange}
-                  placeholder="e.g., 8000"
-                />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Est. Monthly Rent (PKR)</label>
+                <input type="number" name="monthlyRent" value={businessData.monthlyRent} onChange={handleBusinessChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white outline-none" placeholder="15000" />
               </div>
-              <div className="form-group">
-                <label>Total Capacity</label>
-                <input
-                  type="number"
-                  name="totalCapacity"
-                  value={businessData.totalCapacity}
-                  onChange={handleBusinessChange}
-                  placeholder="e.g., 50"
-                />
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Total Capacity</label>
+                <input type="number" name="totalCapacity" value={businessData.totalCapacity} onChange={handleBusinessChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-dark-bg dark:border-dark-border dark:text-white outline-none" placeholder="50" />
               </div>
             </div>
 
-            <div className="form-group">
-              <label>Available Rooms</label>
-              <input
-                type="number"
-                name="availableRooms"
-                value={businessData.availableRooms}
-                onChange={handleBusinessChange}
-                placeholder="e.g., 10"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Available Amenities</label>
-              <div className="checkbox-group">
+            <div className="space-y-3 pt-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-dark-border pb-2 block">Amenities Included</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {amenitiesList.map((amenity) => (
-                  <label key={amenity} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={businessData.amenities.includes(amenity)}
-                      onChange={() => handleAmenityToggle(amenity)}
-                    />
-                    <span>{amenity}</span>
+                  <label key={amenity} className="flex items-center gap-2 cursor-pointer group">
+                    <input type="checkbox" checked={businessData.amenities.includes(amenity)} onChange={() => handleAmenityToggle(amenity)} className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer" />
+                    <span className="text-sm text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{amenity}</span>
                   </label>
                 ))}
               </div>
             </div>
 
-            <div className="form-actions">
-              <button
-                type="button"
-                className="btn-back"
-                onClick={() => setStep(1)}
-              >
-                ← Back
+            <div className="flex gap-4 pt-4">
+              <button type="button" onClick={() => setStep(1)} className="btn-secondary w-1/3 py-3 text-sm">
+                Back
               </button>
-              <button
-                type="submit"
-                className="btn-submit"
-                disabled={loading}
-              >
+              <button type="submit" disabled={loading} className="btn-primary flex-1 py-3 text-sm">
                 {loading ? 'Submitting...' : 'Submit Application'}
               </button>
             </div>
           </form>
         )}
       </div>
-    </div>
+      
+      <p className="mt-4 text-center text-sm text-slate-500 dark:text-slate-400">
+        Already have an account? <a href="/login" className="font-medium text-primary-600 hover:text-primary-500">Log in</a>
+      </p>
+    </AuthLayout>
   );
 }
 
