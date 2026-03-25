@@ -28,6 +28,8 @@ const communityRoutes = require('./routes/communityRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const supportRoutes = require('./routes/supportRoutes');
+const boardingRoutes = require('./routes/boardingRoutes');
+const boardingMessageRoutes = require('./routes/boardingMessageRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -38,6 +40,8 @@ app.use('/api/community', communityRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/boardings', boardingRoutes);
+app.use('/api/boarding-messages', boardingMessageRoutes);
 
 const PORT = process.env.PORT || 5000;
 

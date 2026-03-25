@@ -31,6 +31,30 @@ const getMe = async (req, res) => {
   }
 };
 
+// GET /api/users/boardings (approved boarding owner listings)
+const listBoardings = async (req, res) => {
+  try {
+    const boardings = await User.find({ role: 'boardingOwner', isApproved: true });
+
+    const toResponse = boardings.map((owner) => {
+      const obj = owner.toObject();
+      delete obj.password;
+      delete obj.profileImageData;
+      delete obj.profileImageContentType;
+      if (owner.profileImageData && owner.profileImageContentType) {
+        obj.profileImage = `data:${owner.profileImageContentType};base64,${Buffer.from(owner.profileImageData).toString('base64')}`;
+      } else {
+        obj.profileImage = null;
+      }
+      return obj;
+    });
+
+    return res.json(toResponse);
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to fetch boardings' });
+  }
+};
+
 // PUT /api/users/me
 const updateMe = async (req, res) => {
   try {
@@ -39,7 +63,24 @@ const updateMe = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const { fullName, email, department, qualifications, course, batch } = req.body;
+    const {
+      fullName,
+      email,
+      department,
+      qualifications,
+      course,
+      batch,
+      businessName,
+      ownerNIC,
+      boardingAddress,
+      city,
+      district,
+      monthlyRent,
+      availableRooms,
+      description,
+      facilities,
+      images,
+    } = req.body;
 
     if (fullName !== undefined) user.fullName = fullName;
     if (email !== undefined) user.email = email;
@@ -47,6 +88,39 @@ const updateMe = async (req, res) => {
     if (qualifications !== undefined) user.qualifications = qualifications;
     if (course !== undefined) user.course = course;
     if (batch !== undefined) user.batch = batch;
+
+    if (user.role === 'boardingOwner') {
+      if (businessName !== undefined) user.businessName = businessName;
+      if (ownerNIC !== undefined) user.ownerNIC = ownerNIC;
+      if (boardingAddress !== undefined) user.boardingAddress = boardingAddress;
+      if (city !== undefined) user.city = city;
+      if (district !== undefined) user.district = district;
+      if (monthlyRent !== undefined) user.monthlyRent = Number(monthlyRent) || 0;
+      if (availableRooms !== undefined) user.availableRooms = Number(availableRooms) || 0;
+      if (description !== undefined) user.description = description;
+
+      if (facilities !== undefined) {
+        if (Array.isArray(facilities)) {
+          user.facilities = facilities;
+        } else if (typeof facilities === 'string') {
+          user.facilities = facilities
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
+        }
+      }
+
+      if (images !== undefined) {
+        if (Array.isArray(images)) {
+          user.images = images;
+        } else if (typeof images === 'string') {
+          user.images = images
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
+        }
+      }
+    }
 
     if (req.file) {
       user.profileImageData = req.file.buffer;
@@ -90,5 +164,5 @@ const updateMyPassword = async (req, res) => {
   }
 };
 
-module.exports = { getMe, updateMe, updateMyPassword };
+module.exports = { getMe, listBoardings, updateMe, updateMyPassword };
 

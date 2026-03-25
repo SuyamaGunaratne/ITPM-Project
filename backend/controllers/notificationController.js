@@ -31,7 +31,38 @@ const markNotificationRead = async (req, res) => {
   }
 };
 
+// Send notification to all students when a new boarding is posted
+const sendBoardingNotification = async (boardingId, boardingName, boardingOwnerName) => {
+  try {
+    const User = require('../models/User');
+    
+    // Get all students
+    const students = await User.find({ role: 'student' });
+    
+    if (students.length === 0) {
+      console.log('[sendBoardingNotification] No students found');
+      return;
+    }
+
+    // Create notification for each student
+    const notifications = students.map((student) => ({
+      user: student._id,
+      type: 'new_boarding',
+      boarding: boardingId,
+      message: `New boarding "${boardingName}" has been posted by ${boardingOwnerName}. Check it out in the Boardings section!`,
+      read: false,
+    }));
+
+    await Notification.insertMany(notifications);
+    console.log(`[sendBoardingNotification] Sent notifications to ${students.length} students`);
+  } catch (error) {
+    console.error('[sendBoardingNotification] Error sending notifications:', error);
+    // Don't throw - notifications failing shouldn't break boarding creation
+  }
+};
+
 module.exports = {
   getNotifications,
   markNotificationRead,
+  sendBoardingNotification,
 };

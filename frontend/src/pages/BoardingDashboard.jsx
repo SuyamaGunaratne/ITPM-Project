@@ -54,7 +54,12 @@ function BoardingDashboard() {
         <div className="bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-2xl p-6 lg:p-8 shadow-sm">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-heading font-bold text-slate-900 dark:text-white">My Properties</h2>
-            <button className="btn-primary py-2 px-4 text-sm font-semibold shadow-md shadow-primary-500/20">Add Property</button>
+            <button
+              className="btn-primary py-2 px-4 text-sm font-semibold shadow-md shadow-primary-500/20"
+              onClick={() => window.location.href = '/boarding/properties'}
+            >
+              Add Property
+            </button>
           </div>
           <div className="text-center py-10">
             <div className="text-5xl mb-4">🏠</div>
