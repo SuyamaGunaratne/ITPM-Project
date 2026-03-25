@@ -28,4 +28,6 @@ export const adminNavItems = [
 
 export const boardingOwnerNavItems = [
   { label: 'Dashboard', path: '/boarding/dashboard', icon: <span className="text-xl">📊</span> },
+  { label: 'Boarding Properties', path: '/boarding/properties', icon: <span className="text-xl">🏠</span> },
+  { label: 'Messages', path: '/boarding/messages', icon: <span className="text-xl">💬</span> },
 ];

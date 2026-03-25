@@ -5,13 +5,15 @@ const notificationSchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     type: { 
       type: String, 
-      enum: ['admin_request', 'post_approved', 'post_rejected', 'boarding_registration_request', 'support_request'], 
+      enum: ['admin_request', 'post_approved', 'post_rejected', 'boarding_registration_request', 'support_request', 'new_boarding', 'boarding_inquiry', 'boarding_reply'], 
       required: true 
     },
     post: { type: mongoose.Schema.Types.ObjectId, ref: 'StudentPost' },
     postRequest: { type: mongoose.Schema.Types.ObjectId, ref: 'PostRequest' },
     boardingRegistration: { type: mongoose.Schema.Types.ObjectId, ref: 'BoardingOwnerRegistration' },
+    boarding: { type: mongoose.Schema.Types.ObjectId, ref: 'Boarding' },
     supportRequest: { type: mongoose.Schema.Types.ObjectId, ref: 'Support' },
+    boardingMessage: { type: mongoose.Schema.Types.ObjectId, ref: 'BoardingMessage' },
     message: { type: String, required: true },
     read: { type: Boolean, default: false },
   },

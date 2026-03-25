@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const { protect } = require('../middleware/authMiddleware');
-const { getMe, updateMe, updateMyPassword } = require('../controllers/userController');
+const { getMe, listBoardings, updateMe, updateMyPassword } = require('../controllers/userController');
 
 const router = express.Router();
 
@@ -17,6 +17,7 @@ const upload = multer({
 });
 
 router.get('/me', protect, getMe);
+router.get('/boardings', listBoardings);
 router.put('/me', protect, upload.single('profileImage'), updateMe);
 router.put('/me/password', protect, updateMyPassword);
 

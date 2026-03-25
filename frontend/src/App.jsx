@@ -6,6 +6,7 @@ import TeacherMaterials from './pages/TeacherMaterials';
 import TeacherPublishQuiz from './pages/TeacherPublishQuiz';
 import TeacherProfileEdit from './pages/TeacherProfileEdit';
 import StudentDashboard from './pages/StudentDashboard';
+import StudentBoardings from './pages/StudentBoardings';
 import StudentProfileEdit from './pages/StudentProfileEdit';
 import StudentQuizzes from './pages/StudentQuizzes';
 import StudentMaterials from './pages/StudentMaterials';
@@ -13,6 +14,8 @@ import StudentCommunity from './pages/StudentCommunity';
 import StudentSupport from './pages/StudentSupport';
 import AdminDashboard from './pages/AdminDashboard';
 import BoardingDashboard from './pages/BoardingDashboard';
+import BoardingProperties from './pages/BoardingPages/BoardingProperties';
+import BoardingMessages from './pages/BoardingPages/BoardingMessages';
 import BoardingOwnerRegistration from './pages/BoardingOwnerRegistration';
 import BoardingRegistrationRequests from './pages/AdminPages/BoardingRegistrationRequests';
 import PostRequests from './pages/AdminPages/PostRequests';
@@ -52,6 +55,8 @@ function App() {
     if (path === '/admin/boarding-owners') return <BoardingOwnerManagement />;
     if (path === '/admin/support-requests') return <AdminSupportRequests />;
     if (path === '/boarding/dashboard') return <BoardingDashboard />;
+    if (path === '/boarding/properties') return <BoardingProperties />;
+    if (path === '/boarding/messages') return <BoardingMessages />;
 
     return <HomePage />;
   };
