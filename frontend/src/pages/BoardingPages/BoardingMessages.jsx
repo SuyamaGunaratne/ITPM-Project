@@ -237,7 +237,7 @@ function BoardingMessages() {
                       </select>
                       <button
                         onClick={() => openMessageDetails(message)}
-                        className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
+                        className="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                       >
                         View & Reply
                       </button>
@@ -315,7 +315,7 @@ function BoardingMessages() {
                   type="button"
                   onClick={submitReply}
                   disabled={submittingReply || !replyMessage.trim()}
-                  className="px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-60"
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 transition"
                 >
                   {submittingReply ? 'Sending...' : 'Send Reply'}
                 </button>
