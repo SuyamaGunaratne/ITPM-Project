@@ -15,7 +15,7 @@ app.use(
     origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 // Routes
 const authRoutes = require('./routes/authRoutes');
