@@ -30,12 +30,8 @@ function StudentDashboard() {
     setupBackButtonProtection();
 
     const fetchQuizzes = async () => {
-      if (!user?.course) {
-        setLoading(false);
-        return;
-      }
       try {
-        const data = await getQuizzes({ course: user.course });
+        const data = await getQuizzes(); // Fetch all quizzes
         setQuizzes(data || []);
       } catch (err) {
         console.error("Error fetching student quizzes:", err);
@@ -94,16 +90,16 @@ function StudentDashboard() {
         {/* Upcoming Quizzes */}
         <div className="glass-card rounded-2xl p-6 lg:p-8 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-accent-100 dark:bg-accent-900/20 rounded-bl-full -z-10 transition-transform group-hover:scale-110" />
-          <h2 className="text-xl font-heading font-bold text-slate-900 dark:text-white mb-6">Upcoming Quizzes</h2>
+          <h2 className="text-xl font-heading font-bold text-slate-900 dark:text-white mb-6">Available Quizzes</h2>
           
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
             {loading ? (
               <div className="animate-pulse space-y-4">
                 {[1, 2, 3].map(i => <div key={i} className="h-16 bg-slate-200 dark:bg-slate-800 rounded-xl" />)}
               </div>
             ) : quizzes.length > 0 ? (
-              quizzes.slice(0, 5).map(quiz => (
-                <div key={quiz._id} className="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border shadow-sm hover:border-primary-300 transition-colors cursor-pointer" onClick={() => window.location.href = `/student/quizzes`}>
+              quizzes.map(quiz => (
+                <div key={quiz._id} className="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border shadow-sm hover:border-primary-300 transition-colors cursor-pointer mb-4 last:mb-0" onClick={() => window.location.href = `/student/quizzes`}>
                   <div className="w-10 h-10 rounded-lg bg-accent-100 dark:bg-accent-900/50 text-accent-600 dark:text-accent-400 flex flex-shrink-0 items-center justify-center text-lg">📝</div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">{quiz.title}</p>
@@ -118,7 +114,7 @@ function StudentDashboard() {
             ) : (
               <div className="text-center py-8">
                 <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🎉</div>
-                <p className="text-slate-600 dark:text-slate-400 font-medium">No quizzes available for your course yet.</p>
+                <p className="text-slate-600 dark:text-slate-400 font-medium">No quizzes available at the moment.</p>
               </div>
             )}
           </div>

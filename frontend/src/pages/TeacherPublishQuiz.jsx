@@ -35,6 +35,11 @@ function TeacherPublishQuiz() {
   const [editingQuizId, setEditingQuizId] = useState(null);
   const [isFetchingQuizzes, setIsFetchingQuizzes] = useState(false);
 
+  // Results state
+  const [viewingResultsQuiz, setViewingResultsQuiz] = useState(null);
+  const [quizResults, setQuizResults] = useState([]);
+  const [isFetchingResults, setIsFetchingResults] = useState(false);
+
   useEffect(() => {
     checkAuthAndPreventCaching();
     setupBackButtonProtection();
@@ -97,6 +102,28 @@ function TeacherPublishQuiz() {
     setEditingQuizId(null);
     setFormData({ title: '', course: '', dueDate: '', description: '' });
     setGeneratedQuestions([]);
+    setErrorMsg('');
+  };
+
+  const handleViewResults = async (quiz) => {
+    setViewingResultsQuiz(quiz);
+    setIsFetchingResults(true);
+    setErrorMsg('');
+    try {
+      const { getQuizReports } = await import('../utils/quizApi');
+      const results = await getQuizReports(quiz._id);
+      setQuizResults(results || []);
+    } catch (err) {
+      console.error("Error fetching quiz results:", err);
+      setErrorMsg('Failed to fetch quiz results.');
+    } finally {
+      setIsFetchingResults(false);
+    }
+  };
+
+  const closeResultsView = () => {
+    setViewingResultsQuiz(null);
+    setQuizResults([]);
     setErrorMsg('');
   };
 
@@ -214,7 +241,56 @@ function TeacherPublishQuiz() {
             </button>
           </div>
 
-          {showPublishedList ? (
+          {viewingResultsQuiz ? (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-xl font-heading font-bold text-slate-900 dark:text-white">Results: {viewingResultsQuiz.title}</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{viewingResultsQuiz.course}</p>
+                </div>
+                <button className="btn-outline py-2 px-6 text-sm" onClick={closeResultsView}>← Back to Quizzes</button>
+              </div>
+
+              {isFetchingResults ? (
+                <div className="animate-pulse space-y-4">
+                  {[1, 2, 3].map(i => <div key={i} className="h-16 bg-slate-100 dark:bg-slate-800 rounded-xl" />)}
+                </div>
+              ) : quizResults.length > 0 ? (
+                <div className="bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-xl overflow-hidden shadow-sm">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-dark-border">
+                        <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Student</th>
+                        <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Email</th>
+                        <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Marks</th>
+                        <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Submitted At</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-dark-border">
+                      {quizResults.map((result) => (
+                        <tr key={result._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                          <td className="px-6 py-4 font-semibold text-slate-900 dark:text-white capitalize">{result.student?.fullName || 'N/A'}</td>
+                          <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{result.student?.email || 'N/A'}</td>
+                          <td className="px-6 py-4">
+                             <span className={`inline-block px-3 py-1 rounded-full font-bold text-sm ${result.totalMarksObtained >= (viewingResultsQuiz.totalMarks / 2) ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                               {result.totalMarksObtained} / {viewingResultsQuiz.totalMarks || '-'}
+                             </span>
+                          </td>
+                          <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
+                            {new Date(result.submittedAt).toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="glass-card p-10 rounded-2xl text-center">
+                  <p className="text-slate-500 dark:text-slate-400 font-medium">No students have attempted this quiz yet.</p>
+                </div>
+              )}
+            </div>
+          ) : showPublishedList ? (
             <div className="space-y-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-heading font-bold text-slate-900 dark:text-white">Published Quizzes</h2>
@@ -235,7 +311,8 @@ function TeacherPublishQuiz() {
                           {quiz.course} &bull; {quiz.questions?.length || 0} Questions &bull; {quiz.dueDate ? `Due ${new Date(quiz.dueDate).toLocaleDateString()}` : 'No due date'}
                         </p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
+                        <button className="px-4 py-2 text-sm font-semibold rounded-lg bg-primary-50 text-primary-600 hover:bg-primary-100 dark:bg-primary-900/20 dark:text-primary-400 dark:hover:bg-primary-900/40 transition-colors shadow-sm" onClick={() => handleViewResults(quiz)}>View Results</button>
                         <button className="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors" onClick={() => startEditingQuiz(quiz)}>Edit</button>
                         <button className="px-4 py-2 text-sm font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors" onClick={() => handleDeleteQuiz(quiz._id)}>Delete</button>
                       </div>
