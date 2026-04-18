@@ -229,7 +229,13 @@ export default function DashboardLayout({
                           className={`p-4 hover:bg-gradient-to-r hover:from-slate-50 hover:to-blue-50 dark:hover:from-slate-800/50 dark:hover:to-blue-900/10 cursor-pointer transition-all duration-200 border-b border-slate-100 dark:border-dark-border last:border-b-0 group ${
                             !notification.read ? 'bg-gradient-to-r from-blue-50/50 to-indigo-50/30 dark:from-blue-900/20 dark:to-indigo-900/10' : ''
                           }`}
-                          onClick={() => markAsRead(notification._id)}
+                          onClick={() => {
+                            markAsRead(notification._id);
+                            // Navigate to post for post-related notifications
+                            if (['post_comment', 'post_like', 'post_approved', 'post_rejected'].includes(notification.type) && notification.post) {
+                              window.location.href = `/student/community?postId=${notification.post}`;
+                            }
+                          }}
                           style={{ animationDelay: `${index * 50}ms` }}
                         >
                           <div className="flex items-start gap-4">
@@ -243,6 +249,10 @@ export default function DashboardLayout({
                                 ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
                                 : notification.type === 'post_rejected'
                                 ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                                : notification.type === 'post_comment'
+                                ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                                : notification.type === 'post_like'
+                                ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
                                 : notification.type === 'support_request'
                                 ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
                                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
@@ -251,8 +261,10 @@ export default function DashboardLayout({
                               {notification.type === 'boarding_registration_request' && '🏠'}
                               {notification.type === 'post_approved' && '✅'}
                               {notification.type === 'post_rejected' && '❌'}
+                              {notification.type === 'post_comment' && '💭'}
+                              {notification.type === 'post_like' && '❤️'}
                               {notification.type === 'support_request' && '🆘'}
-                              {!['admin_request', 'boarding_registration_request', 'post_approved', 'post_rejected', 'support_request'].includes(notification.type) && '🔔'}
+                              {!['admin_request', 'boarding_registration_request', 'post_approved', 'post_rejected', 'post_comment', 'post_like', 'support_request'].includes(notification.type) && '🔔'}
                             </div>
 
                             <div className="flex-1 min-w-0">
@@ -278,13 +290,19 @@ export default function DashboardLayout({
                                     ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
                                     : notification.type === 'post_rejected'
                                     ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                                    : notification.type === 'post_comment'
+                                    ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                                    : notification.type === 'post_like'
+                                    ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300'
                                     : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                                 }`}>
                                   {notification.type === 'admin_request' && 'Community'}
                                   {notification.type === 'boarding_registration_request' && 'Registration'}
                                   {notification.type === 'post_approved' && 'Approved'}
                                   {notification.type === 'post_rejected' && 'Rejected'}
-                                  {!['admin_request', 'boarding_registration_request', 'post_approved', 'post_rejected'].includes(notification.type) && 'System'}
+                                  {notification.type === 'post_comment' && 'Comment'}
+                                  {notification.type === 'post_like' && 'Like'}
+                                  {!['admin_request', 'boarding_registration_request', 'post_approved', 'post_rejected', 'post_comment', 'post_like'].includes(notification.type) && 'System'}
                                 </span>
                               </div>
                             </div>

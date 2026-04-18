@@ -198,6 +198,23 @@ const addComment = async (req, res) => {
     // respond with newly created comment (last in array)
     const added = post.comments[post.comments.length - 1];
 
+    // Send notification to post owner if it's not the post owner commenting
+    if (post.author.toString() !== req.user._id.toString()) {
+      try {
+        const commenter = await User.findById(req.user._id).select('fullName');
+        await Notification.create({
+          user: post.author,
+          type: 'post_comment',
+          post: postId,
+          sender: req.user._id,
+          messageContent: text.trim(),
+          message: `${commenter?.fullName || 'A student'} commented on your post: "${text.trim().substring(0, 50)}${text.trim().length > 50 ? '...' : ''}"`,
+        });
+      } catch (notifyErr) {
+        console.error('Failed to create comment notification:', notifyErr);
+      }
+    }
+
     res.status(201).json({ message: 'Comment added', comment: added });
   } catch (error) {
     console.error('Error adding comment:', error);
@@ -231,6 +248,22 @@ const toggleLike = async (req, res) => {
     }
 
     await post.save();
+
+    // Send notification to post owner if someone likes the post (not for unlike)
+    if (liked && post.author.toString() !== req.user._id.toString()) {
+      try {
+        const liker = await User.findById(req.user._id).select('fullName');
+        await Notification.create({
+          user: post.author,
+          type: 'post_like',
+          post: postId,
+          sender: req.user._id,
+          message: `${liker?.fullName || 'A student'} liked your post "${post.title}"`,
+        });
+      } catch (notifyErr) {
+        console.error('Failed to create like notification:', notifyErr);
+      }
+    }
 
     res.json({
       message: liked ? 'Post liked' : 'Like removed',
@@ -484,6 +517,29 @@ const deletePost = async (req, res) => {
   }
 };
 
+// Get list of users who liked a post
+const getLikes = async (req, res) => {
+  try {
+    const { postId } = req.params;
+
+    const post = await StudentPost.findById(postId).populate('likes', 'fullName profileImageData profileImageContentType');
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    const formatted = (post.likes || []).map((u) => ({
+      _id: u._id,
+      fullName: u.fullName,
+      profileImage: u.profileImageData && u.profileImageContentType
+        ? `data:${u.profileImageContentType};base64,${Buffer.from(u.profileImageData).toString('base64')}`
+        : null,
+    }));
+
+    res.json(formatted);
+  } catch (error) {
+    console.error('Error getting likes:', error);
+    res.status(500).json({ message: 'Failed to fetch likes', error: error.message });
+  }
+};
+
 module.exports = {
   createPost,
   getApprovedPosts,
@@ -493,6 +549,7 @@ module.exports = {
   addComment,
   toggleLike,
   getComments,
+  getLikes,
   getPendingPosts,
   approvePost,
   rejectPost,
