@@ -189,7 +189,7 @@ function TeacherPublishQuiz() {
         course: formData.course,
         description: formData.description,
         dueDate: formData.dueDate,
-        teacherId: user._id, 
+        teacherId: user._id,
         questions: generatedQuestions
       };
 
@@ -225,21 +225,22 @@ function TeacherPublishQuiz() {
         onLogout={handleLogout}
       >
         <div className="w-full max-w-5xl mx-auto pb-12">
-          
+
           <div className="flex gap-2 overflow-x-auto border-b border-slate-200 dark:border-slate-800 mb-8 pb-px">
-            <button 
+            <button
               className={`px-6 py-3 font-semibold text-sm transition-all whitespace-nowrap border-b-2 ${!showPublishedList ? 'border-primary-500 text-primary-600 bg-primary-50/50 dark:bg-primary-900/20 rounded-tl-xl rounded-tr-xl' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-tl-xl rounded-tr-xl'}`}
-              onClick={() => { setShowPublishedList(false); if(editingQuizId) cancelFullEdit(); }}
+              onClick={() => { setShowPublishedList(false); if (editingQuizId) cancelFullEdit(); }}
             >
               {editingQuizId ? 'Editing Quiz' : 'Publish New Quiz'}
             </button>
-            <button 
+            <button
               className={`px-6 py-3 font-semibold text-sm transition-all whitespace-nowrap border-b-2 ${showPublishedList ? 'border-primary-500 text-primary-600 bg-primary-50/50 dark:bg-primary-900/20 rounded-tl-xl rounded-tr-xl' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-tl-xl rounded-tr-xl'}`}
               onClick={togglePublishedList}
             >
               Published Quizzes
             </button>
           </div>
+          {/*view results*/}
 
           {viewingResultsQuiz ? (
             <div className="space-y-6">
@@ -272,9 +273,9 @@ function TeacherPublishQuiz() {
                           <td className="px-6 py-4 font-semibold text-slate-900 dark:text-white capitalize">{result.student?.fullName || 'N/A'}</td>
                           <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{result.student?.email || 'N/A'}</td>
                           <td className="px-6 py-4">
-                             <span className={`inline-block px-3 py-1 rounded-full font-bold text-sm ${result.totalMarksObtained >= (viewingResultsQuiz.totalMarks / 2) ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
-                               {result.totalMarksObtained} / {viewingResultsQuiz.totalMarks || '-'}
-                             </span>
+                            <span className={`inline-block px-3 py-1 rounded-full font-bold text-sm ${result.totalMarksObtained >= (viewingResultsQuiz.totalMarks / 2) ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                              {result.totalMarksObtained} / {viewingResultsQuiz.totalMarks || '-'}
+                            </span>
                           </td>
                           <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
                             {new Date(result.submittedAt).toLocaleString()}
@@ -296,7 +297,7 @@ function TeacherPublishQuiz() {
                 <h2 className="text-xl font-heading font-bold text-slate-900 dark:text-white">Published Quizzes</h2>
                 <button className="btn-primary py-2 px-6 text-sm" onClick={() => setShowPublishedList(false)}>+ Publish New</button>
               </div>
-              
+
               <div className="grid grid-cols-1 gap-4">
                 {isFetchingQuizzes ? (
                   <div className="animate-pulse space-y-4">
@@ -328,7 +329,7 @@ function TeacherPublishQuiz() {
           ) : (
             <div className="bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-3xl p-6 lg:p-10 shadow-sm relative overflow-hidden">
               <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-primary-400 to-accent-500" />
-              
+
               <div className="flex justify-between items-center mb-8 border-b border-slate-200 dark:border-slate-800 pb-6">
                 <h2 className="text-2xl font-heading font-bold text-slate-900 dark:text-white">
                   {editingQuizId ? 'Edit Quiz Details' : 'New Quiz Details'}
@@ -393,7 +394,7 @@ function TeacherPublishQuiz() {
                   <div className="p-6 md:p-8 bg-slate-50/50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800 rounded-2xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/10 rounded-bl-full -z-10" />
                     <h3 className="text-xl font-heading font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">✨ AI Question Generator</h3>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="space-y-2 md:col-span-3">
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Upload Reference PDF</label>
@@ -455,7 +456,7 @@ function TeacherPublishQuiz() {
                 {generatedQuestions.length > 0 && (
                   <div className="pt-6 border-t border-slate-200 dark:border-slate-800">
                     <h3 className="text-xl font-heading font-bold text-slate-900 dark:text-white mb-6">Generated Questions ({generatedQuestions.length})</h3>
-                    
+
                     <div className="space-y-4">
                       {generatedQuestions.map((q, idx) => (
                         <div key={idx} className="border border-slate-200 dark:border-dark-border rounded-2xl bg-slate-50/30 dark:bg-slate-800/10 overflow-hidden">
@@ -471,28 +472,28 @@ function TeacherPublishQuiz() {
                                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all"
                                   />
                                 </div>
-                                
+
                                 {editForm.type === 'MCQ' && (
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="md:col-span-2">
                                       <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Options</label>
                                       <div className="space-y-2">
-                                      {editForm.options?.map((opt, i) => (
-                                        <input
-                                          key={i}
-                                          type="text"
-                                          value={opt}
-                                          onChange={(e) => handleOptionChange(i, e.target.value)}
-                                          placeholder={`Option ${i + 1}`}
-                                          className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all"
-                                        />
-                                      ))}
+                                        {editForm.options?.map((opt, i) => (
+                                          <input
+                                            key={i}
+                                            type="text"
+                                            value={opt}
+                                            onChange={(e) => handleOptionChange(i, e.target.value)}
+                                            placeholder={`Option ${i + 1}`}
+                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all"
+                                          />
+                                        ))}
                                       </div>
                                     </div>
                                     <div className="md:col-span-2">
                                       <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Correct Answer</label>
-                                      <select 
-                                        value={editForm.correctAnswer} 
+                                      <select
+                                        value={editForm.correctAnswer}
                                         onChange={(e) => handleEditChange('correctAnswer', e.target.value)}
                                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all"
                                       >
@@ -503,7 +504,7 @@ function TeacherPublishQuiz() {
                                     </div>
                                   </div>
                                 )}
-                                
+
                                 {editForm.type !== 'MCQ' && (
                                   <div>
                                     <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Grading Criteria / Correct Answer</label>
@@ -525,7 +526,7 @@ function TeacherPublishQuiz() {
                                     className="w-32 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-bg dark:border-dark-border dark:text-white transition-all"
                                   />
                                 </div>
-                                
+
                                 <div className="flex gap-3 pt-4">
                                   <button type="button" onClick={saveEdit} className="btn-primary py-2 px-6 text-sm">Save Changes</button>
                                   <button type="button" onClick={cancelEdit} className="btn-outline py-2 px-6 text-sm">Cancel</button>
@@ -536,7 +537,7 @@ function TeacherPublishQuiz() {
                             <div className="flex flex-col md:flex-row justify-between items-start p-6 gap-6">
                               <div className="flex-1">
                                 <p className="text-lg font-medium text-slate-900 dark:text-white mb-4"><span className="text-slate-400 font-bold mr-2">Q{idx + 1}.</span>{q.questionText}</p>
-                                
+
                                 {q.type === 'MCQ' && q.options && (
                                   <div className="space-y-2 pl-8">
                                     {q.options.map((opt, i) => (
@@ -546,7 +547,7 @@ function TeacherPublishQuiz() {
                                     ))}
                                   </div>
                                 )}
-                                
+
                                 {q.type !== 'MCQ' && (
                                   <div className="pl-8 mt-4">
                                     <p className="text-sm font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider mb-1">Grading Criteria</p>
