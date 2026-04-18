@@ -397,13 +397,29 @@ function TeacherPublishQuiz() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="space-y-2 md:col-span-3">
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Upload Reference PDF</label>
-                        <input
-                          type="file"
-                          accept="application/pdf"
-                          onChange={(e) => setAiConfig({ ...aiConfig, modulePdf: e.target.files[0] })}
-                          className="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-primary-900/30 dark:file:text-primary-400 cursor-pointer"
-                        />
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                          Upload Reference PDF
+                        </label>
+
+                        <label className="flex items-center justify-between w-full px-4 py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl cursor-pointer hover:border-primary-500 transition">
+                          
+                          <span className="text-sm text-slate-600 dark:text-slate-400">
+                            {aiConfig.modulePdf ? aiConfig.modulePdf.name : "No file chosen"}
+                          </span>
+
+                          <span className="px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition shadow-sm">
+                            Choose File
+                          </span>
+
+                          <input
+                            type="file"
+                            accept="application/pdf"
+                            onChange={(e) =>
+                              setAiConfig({ ...aiConfig, modulePdf: e.target.files[0] })
+                            }
+                            className="hidden"
+                          />
+                        </label>
                       </div>
 
                       <div className="space-y-2">
@@ -572,7 +588,9 @@ function TeacherPublishQuiz() {
 
                 <div className="flex flex-col sm:flex-row justify-end gap-3 pt-8 border-t border-slate-200 dark:border-slate-800 mt-8">
                   <button
-                    className="btn-outline py-3 px-8"
+                    className="px-8 py-3 rounded-lg border-2 border-red-500 text-red-500 font-semibold 
+                              hover:bg-red-500 hover:text-white transition-all duration-200 
+                              shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-red-300"
                     type="button"
                     onClick={editingQuizId ? cancelFullEdit : () => (window.location.href = '/teacher/dashboard')}
                   >

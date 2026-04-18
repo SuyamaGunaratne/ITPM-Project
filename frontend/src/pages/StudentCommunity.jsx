@@ -39,6 +39,8 @@ function StudentCommunity() {
 
   const [commentInputs, setCommentInputs] = useState({});
   const [activeCommentPostId, setActiveCommentPostId] = useState(null);
+  const [activePostLikesId, setActivePostLikesId] = useState(null);
+  const [postLikes, setPostLikes] = useState({});
 
   const [user] = useState(() => {
     const stored = window.localStorage.getItem('unihub_user');
@@ -137,6 +139,25 @@ function StudentCommunity() {
       const data = await parseJsonOrText(res);
       if (!res.ok) throw new Error(data.message || 'Failed to update like');
       setFeedPosts((prev) => prev.map((p) => p._id === postId ? { ...p, likesCount: data.likesCount, likedByCurrentUser: data.likedByCurrentUser } : p));
+    } catch (err) { setError(err.message); }
+    finally { setActionLoading(false); }
+  };
+
+  const handleViewLikes = async (postId) => {
+    if (activePostLikesId === postId) {
+      setActivePostLikesId(null);
+      return;
+    }
+    
+    setActionLoading(true);
+    try {
+      if (!postLikes[postId]) {
+        const res = await fetch(`http://localhost:5000/api/community/posts/${postId}/likes`, { headers: apiHeaders });
+        const data = await parseJsonOrText(res);
+        if (!res.ok) throw new Error(data.message || 'Failed to fetch likers');
+        setPostLikes((prev) => ({ ...prev, [postId]: data }));
+      }
+      setActivePostLikesId(postId);
     } catch (err) { setError(err.message); }
     finally { setActionLoading(false); }
   };
@@ -366,13 +387,22 @@ function StudentCommunity() {
                       <div className="flex items-center gap-2 mb-4">
                         <button
                           type="button"
-                          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 ${post.likedByCurrentUser ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'}`}
+                          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer ${post.likedByCurrentUser ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'}`}
                           onClick={() => handleToggleLike(post._id)}
                           disabled={actionLoading}
                         >
                           <span className={post.likedByCurrentUser ? "text-primary-500" : ""}>♥</span>
                           {post.likesCount || 0}
                         </button>
+                        {post.likesCount > 0 && (
+                          <button
+                            type="button"
+                            className="text-xs text-primary-600 dark:text-primary-400 hover:underline font-medium"
+                            onClick={() => handleViewLikes(post._id)}
+                          >
+                            View who liked
+                          </button>
+                        )}
                         <button
                           type="button"
                           className="px-4 py-2 rounded-xl text-sm font-semibold transition-colors bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 flex items-center gap-2"
@@ -382,6 +412,26 @@ function StudentCommunity() {
                           {post.comments?.length || 0} {post.comments?.length === 1 ? 'Reply' : 'Replies'}
                         </button>
                       </div>
+
+                      {activePostLikesId === post._id && (
+                        <div className="mb-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                          <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Liked by:</h4>
+                          {postLikes[post._id]?.length === 0 ? (
+                            <p className="text-xs text-slate-500 dark:text-slate-400">No likes yet</p>
+                          ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {postLikes[post._id]?.map((liker) => (
+                                <div key={liker._id} className="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-slate-800/50">
+                                  <div className="w-6 h-6 rounded-full bg-primary-200 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                    {getInitials(liker.fullName)}
+                                  </div>
+                                  <span className="text-xs font-medium text-slate-900 dark:text-white truncate">{liker.fullName}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {activeCommentPostId === post._id && (
                         <div className="pt-4 mt-2 border-t border-slate-100 dark:border-slate-800 space-y-4">

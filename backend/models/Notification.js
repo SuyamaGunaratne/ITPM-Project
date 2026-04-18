@@ -5,7 +5,7 @@ const notificationSchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     type: { 
       type: String, 
-      enum: ['admin_request', 'post_approved', 'post_rejected', 'boarding_registration_request', 'support_request', 'new_boarding', 'boarding_inquiry', 'boarding_reply'], 
+      enum: ['admin_request', 'post_approved', 'post_rejected', 'boarding_registration_request', 'support_request', 'new_boarding', 'boarding_inquiry', 'boarding_reply', 'post_comment', 'post_like'], 
       required: true 
     },
     post: { type: mongoose.Schema.Types.ObjectId, ref: 'StudentPost' },
@@ -14,6 +14,8 @@ const notificationSchema = new mongoose.Schema(
     boarding: { type: mongoose.Schema.Types.ObjectId, ref: 'Boarding' },
     supportRequest: { type: mongoose.Schema.Types.ObjectId, ref: 'Support' },
     boardingMessage: { type: mongoose.Schema.Types.ObjectId, ref: 'BoardingMessage' },
+    messageContent: { type: String }, // For storing comment text
+    sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Who commented/liked
     message: { type: String, required: true },
     read: { type: Boolean, default: false },
   },
