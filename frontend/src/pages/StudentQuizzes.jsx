@@ -17,6 +17,8 @@ function StudentQuizzes() {
   const [activeResult, setActiveResult] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [activeTab, setActiveTab] = useState('pending'); // 'pending', 'completed'
+
   const stored = window.localStorage.getItem('unihub_user');
   const user = stored ? JSON.parse(stored) : null;
   const studentName = user?.fullName || user?.name || 'Student';
@@ -50,6 +52,10 @@ function StudentQuizzes() {
   };
 
   const hasAttempted = (quizId) => attempts.some(a => a.quiz?._id === quizId);
+
+  const pendingQuizzes = quizzes.filter(q => !hasAttempted(q._id));
+  const completedQuizzes = quizzes.filter(q => hasAttempted(q._id));
+  const displayedQuizzes = activeTab === 'pending' ? pendingQuizzes : completedQuizzes;
 
   const startQuiz = (quiz) => {
     setActiveQuiz(quiz);
@@ -108,19 +114,51 @@ function StudentQuizzes() {
         <div className="w-full">
           {view === 'list' && (
             <div className="space-y-6">
+              {/* Tab Switcher */}
+              <div className="flex p-1 bg-slate-100 dark:bg-slate-800/50 rounded-xl w-fit mb-6">
+                <button
+                  onClick={() => setActiveTab('pending')}
+                  className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${
+                    activeTab === 'pending'
+                      ? 'bg-white dark:bg-primary-600 text-primary-600 dark:text-white shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Pending Quizzes ({pendingQuizzes.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab('completed')}
+                  className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${
+                    activeTab === 'completed'
+                      ? 'bg-white dark:bg-primary-600 text-primary-600 dark:text-white shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Completed ({completedQuizzes.length})
+                </button>
+              </div>
+
               {loading ? (
                 <div className="animate-pulse space-y-4">
                   {[1, 2, 3].map(i => <div key={i} className="h-32 bg-slate-100 dark:bg-slate-800 rounded-2xl" />)}
                 </div>
-              ) : quizzes.length === 0 ? (
+              ) : displayedQuizzes.length === 0 ? (
                 <div className="glass-card p-10 rounded-2xl text-center">
-                  <div className="w-20 h-20 bg-primary-50 dark:bg-primary-900/40 text-primary-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4">📭</div>
-                  <h3 className="text-xl font-heading font-bold text-slate-900 dark:text-white mb-2">No Quizzes Available</h3>
-                  <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">There are no quizzes currently assigned to your enrolled courses.</p>
+                  <div className="w-20 h-20 bg-primary-50 dark:bg-primary-900/40 text-primary-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4">
+                    {activeTab === 'pending' ? '🎉' : '⏳'}
+                  </div>
+                  <h3 className="text-xl font-heading font-bold text-slate-900 dark:text-white mb-2">
+                    {activeTab === 'pending' ? 'No Pending Quizzes' : 'No Completed Quizzes'}
+                  </h3>
+                  <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                    {activeTab === 'pending' 
+                      ? "You've caught up on all your quizzes! Great job." 
+                      : "You haven't completed any quizzes yet. Start one to see your results here."}
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {quizzes.map(quiz => (
+                  {displayedQuizzes.map(quiz => (
                     <div key={quiz._id} className="bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
                       <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-primary-400 to-accent-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                       <div className="flex justify-between items-start mb-4">
